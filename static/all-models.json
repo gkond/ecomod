@@ -1,0 +1,104 @@
+[
+  {
+    "model_system_name": "model_1",
+    "inputs": {
+      "gasoline_exxon": {
+        "series_id": "11",
+        "series_type": "input",
+        "series_name_system": "series_11",
+        "series_name_user": "gasoline_exxon",
+        "source": {
+          "source_type": "output",
+          "source_author": "macbook",
+          "source_series_name_system": "series_9",
+          "source_model_name_user": "Exxon_4"
+        }
+      },
+      "oil": {
+        "series_id": "10",
+        "series_type": "input",
+        "series_name_system": "series_10",
+        "series_name_user": "oil",
+        "source": {
+          "source_type": "timeseries",
+          "source_author": "macbook",
+          "source_series_name_system": "series_0",
+          "source_model_name_user": "None"
+        }
+      }
+    },
+    "model_name_user": "Goodyear",
+    "outputs": {
+      "incomePerDay_goodyear": {
+        "comment": "no comment",
+        "series_name_system": "series_12",
+        "series_type": "output",
+        "series_id": "12",
+        "source": "self",
+        "series_name_user": "incomePerDay_goodyear"
+      }
+    },
+    "author": "macbook"
+  },
+  {
+    "model_system_name": "model_0",
+    "inputs": {
+      "G&A_Exxon": {
+        "series_id": "6",
+        "series_type": "input",
+        "series_name_system": "series_6",
+        "series_name_user": "G&A_Exxon",
+        "source": {
+          "source_type": "timeseries",
+          "source_author": "macbook",
+          "source_series_name_system": "series_2",
+          "source_model_name_user": "None"
+        }
+      },
+      "oil": {
+        "series_id": "5",
+        "series_type": "input",
+        "series_name_system": "series_5",
+        "series_name_user": "oil",
+        "source": {
+          "source_type": "timeseries",
+          "source_author": "macbook",
+          "source_series_name_system": "series_0",
+          "source_model_name_user": "None"
+        }
+      },
+      "Income_tax_rate": {
+        "series_id": "7",
+        "series_type": "input",
+        "series_name_system": "series_7",
+        "series_name_user": "Income_tax_rate",
+        "source": {
+          "source_type": "timeseries",
+          "source_author": "macbook",
+          "source_series_name_system": "series_4",
+          "source_model_name_user": "None"
+        }
+      }
+    },
+    "model_name_user": "Exxon_4",
+    "outputs": {
+      "incomePerDay_exxon": {
+        "comment": "s983983",
+        "series_name_system": "series_8",
+        "series_type": "output",
+        "series_id": "8",
+        "source": "self",
+        "series_name_user": "incomePerDay_exxon"
+      },
+      "gasoline_exxon": {
+        "comment": "s332_4",
+        "series_name_system": "series_9",
+        "series_type": "output",
+        "series_id": "9",
+        "source": "self",
+        "series_name_user": "gasoline_exxon"
+      }
+    },
+    "author": "macbook"
+  }
+]

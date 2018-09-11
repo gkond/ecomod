@@ -1,0 +1,71 @@
+{
+  "Income_tax_rate,Exxon_4,macbook,input,source_type:timeseries,Income_tax_rate,macbook": {
+    "1514764800000": null,
+    "1514937600000": 0.2,
+    "1515024000000": 0.2,
+    "1514851200000": 0.2
+  },
+  "G&A_Exxon_sovcombank:macbook:timeseries": {
+    "1514764800000": 100.0,
+    "1514937600000": 100.0,
+    "1515024000000": null,
+    "1514851200000": 100.0
+  },
+  "incomePerDay_exxon,macbook,(output,Exxon_4)": {
+    "1514764800000": null,
+    "1514937600000": 200.0,
+    "1515024000000": 200.0,
+    "1514851200000": 200.0
+  },
+  "oil_Brent:macbook:timeseries": {
+    "1514764800000": 80.0,
+    "1514937600000": 60.0,
+    "1515024000000": null,
+    "1514851200000": 70.0
+  },
+  "G&A_Exxon,Exxon_4,macbook,input,source_type:timeseries,G&A_Exxon,macbook": {
+    "1514764800000": null,
+    "1514937600000": 100.0,
+    "1515024000000": 100.0,
+    "1514851200000": 100.0
+  },
+  "Income_tax_rate:macbook:timeseries": {
+    "1514764800000": 0.2,
+    "1514937600000": 0.2,
+    "1515024000000": null,
+    "1514851200000": 0.2
+  },
+  "oil,Goodyear,macbook,input,source_type:timeseries,oil,macbook": {
+    "1514764800000": null,
+    "1514937600000": 70.0,
+    "1515024000000": 60.0,
+    "1514851200000": 80.0
+  },
+  "incomePerDay_goodyear,macbook,(output,Goodyear)": {
+    "1514764800000": null,
+    "1514937600000": 330.0,
+    "1515024000000": 300.0,
+    "1514851200000": {
+      "message": "",
+      "args": []
+    }
+  },
+  "gasoline_exxon,Goodyear,macbook,input,source_type:output,Exxon_4,gasoline_exxon,macbook)": {
+    "1514764800000": null,
+    "1514937600000": 260.0,
+    "1515024000000": 240.0,
+    "1514851200000": "#N/A"
+  },
+  "gasoline_exxon,macbook,(output,Exxon_4)": {
+    "1514764800000": null,
+    "1514937600000": 240.0,
+    "1515024000000": 220.0,
+    "1514851200000": 260.0
+  },
+  "oil,Exxon_4,macbook,input,source_type:timeseries,oil,macbook": {
+    "1514764800000": null,
+    "1514937600000": 70.0,
+    "1515024000000": 60.0,
+    "1514851200000": 80.0
+  }
+}

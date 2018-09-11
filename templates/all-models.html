@@ -1,0 +1,95 @@
+<!doctype html>
+<head>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+          integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+            integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
+            integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+            crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"
+            integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
+            crossorigin="anonymous"></script>
+    <title>All Models</title>
+</head>
+<body>
+
+
+<div class="container">
+    {% if data %}
+        {% for item in data %}
+            <div class="card shadow my-5">
+                <div class="card-header">
+                    <h1>{{ item.model_name_user }}</h1>
+                    <dl>
+                        <p>System name: <strong>{{ item.model_system_name }}</strong></p>
+                        <p>Author: <strong>{{ item.author }}</strong></p>
+                    </dl>
+                </div>
+                <div class="card-body">
+                    <h2>Inputs</h2>
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th scope="col">Id</th>
+                            <th scope="col">Name</th>
+                            <th scope="col">System name</th>
+                            <th scope="col">Source type</th>
+                            <th scope="col">Source author</th>
+                            <th scope="col">Source series name</th>
+                            <th scope="col">Source model name</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for key, value in item.inputs.items() %}
+                            <tr>
+                                <th scope="row">{{ value.series_id }}</th>
+                                <td>{{ value.series_name_user }}</td>
+                                <td>{{ value.series_name_system }}</td>
+                                <td>{{ value.source.source_type }}</td>
+                                <td>{{ value.source.source_author }}</td>
+                                <td>{{ value.source.source_series_name_system }}</td>
+                                <td>{{ value.source.source_model_name_user }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <h2>Outputs</h2>
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th scope="col">Id</th>
+                            <th scope="col">User name</th>
+                            <th scope="col">System name</th>
+                            <th scope="col">Series type</th>
+                            <th scope="col">Series id</th>
+                            <th scope="col">Source</th>
+                            <th scope="col">Comment</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for key, value in item.outputs.items() %}
+                            <tr>
+                                <th scope="row">{{ value.series_id }}</th>
+                                <td>{{ value.series_name_user }}</td>
+                                <td>{{ value.series_name_system }}</td>
+                                <td>{{ value.series_type }}</td>
+                                <td>{{ value.series_id }}</td>
+                                <td>{{ value.source }}</td>
+                                <td>{{ value.comment }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <h1>No data</h1>
+    {% endif %}
+</div>
+
+</body>
