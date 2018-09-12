@@ -7,20 +7,20 @@
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script>
         function initTS(ts) {
-            let id = ts.id;
-            let data = [{
+            var id = ts.id;
+            var data = [{
                 mode: 'lines+markers',
                 name: ts.id,
-                x: ts.values.x.map((timestamp) => new Date(Number(timestamp))),
+                x: ts.values.x.map(function (timestamp) { return new Date(Number(timestamp)); }),
                 y: ts.values.y,
                 line: {color: '#4488CC'}
             }];
-            let layout = {
+            var layout = {
                 height: 240,
                 margin: {t: 20, r: 40, b: 40, l: 40},
                 xaxis: {tickmode: "linear"},
             };
-            let params = {
+            var params = {
                 displayModeBar: false
             };
 
