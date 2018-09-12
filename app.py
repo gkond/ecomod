@@ -12,16 +12,15 @@ def home():
     return 'Home page'
 
 
-@app.route('/all-models')
+@app.route('/models')
 def all_models():
-    filename = os.path.join(app.static_folder, 'all-models.json')
+    filename = os.path.join(app.static_folder, 'models.json')
     data = json.load(open(filename))
-    return render_template('all-models.html', data=data)
+    return render_template('models.html', data=data)
 
-
-@app.route('/all-results')
+@app.route('/results')
 def results():
-    filename = os.path.join(app.static_folder, 'all-results.json')
+    filename = os.path.join(app.static_folder, 'results.json')
     resp = json.load(open(filename))
 
     time_series = []
@@ -84,7 +83,11 @@ def results():
 
     time_series.sort(key=lambda ts: ts['result_type'], reverse=False)
 
-    return render_template('all-results.html', results=results, time_series=time_series)
+    return render_template('results.html', results=results, time_series=time_series)
+
+@app.route('/run')
+def run():
+    return render_template('run.html')
 
 
 if __name__ == '__main__':
