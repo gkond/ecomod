@@ -42,7 +42,7 @@ def results():
         # Income_tax_rate: macbook:timeseries
         if re.search(':timeseries$', name):
             attrs = name.split(':')
-            [ts_name, ts_author, *_] = map(str.strip, attrs)
+            (ts_name, ts_author), rest = attrs[:2], attrs[2:]
             ts['result_type'] = 'Input time series'
             ts['ts_name'] = ts_name
             ts['ts_author'] = ts_author
@@ -52,8 +52,9 @@ def results():
         # incomePerDay_goodyear, macbook, (output, Goodyear)
         # gasoline_exxon, macbook, (output, Exxon_4)
         if re.search('\(output,.*\)$', name):
-            attrs = [re.sub(r'[()]', '', attr) for attr in name.split(',')]
-            [ts_name, ts_author, _, model_name, *_] = map(str.strip, attrs)
+            name_wo_braces = re.sub(r'[()]', '', name)
+            attrs = name_wo_braces.split(',')
+            (ts_name, ts_author, _, model_name), rest = attrs[:4], attrs[4:]
             ts['result_type'] = 'Output time series'
             ts['ts_name'] = ts_name
             ts['ts_author'] = ts_author
@@ -67,13 +68,13 @@ def results():
         # oil, Exxon_4, macbook, input, source_type: timeseries, oil, macbook
         if re.search('input,source_type:', name):
             attrs = name.split(',')
-            ts_name, model_name, ts_author, _, *source = map(str.strip, attrs)
+            (ts_name, model_name, ts_author, _), source = attrs[:4], attrs[4:]
             ts['result_type'] = 'Intermediate input time series'
             ts['ts_name'] = ts_name
             ts['ts_author'] = ts_author
             ts['model_name'] = model_name
             if re.search('input,source_type:output', name):
-                _, source_model_name, *_ = source
+                source_model_name, rest = source[1], source[2:]
                 ts['source_model_name'] = source_model_name
                 ts['source_type'] = 'model'
             else:
