@@ -9,7 +9,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return 'Home page'
+    return render_template('home.html')
 
 
 @app.route('/models')
@@ -17,6 +17,7 @@ def all_models():
     filename = os.path.join(app.static_folder, 'models.json')
     data = json.load(open(filename))
     return render_template('models.html', data=data)
+
 
 @app.route('/results')
 def results():
@@ -85,6 +86,7 @@ def results():
     time_series.sort(key=lambda ts: ts['result_type'], reverse=False)
 
     return render_template('results.html', results=results, time_series=time_series)
+
 
 @app.route('/run')
 def run():
