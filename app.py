@@ -7,6 +7,11 @@ import re
 app = Flask(__name__)
 
 
+def load_json (name):
+    filename = os.path.join(app.static_folder, name)
+    return json.load(open(filename))
+
+
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -14,18 +19,15 @@ def home():
 
 @app.route('/models')
 def all_models():
-    filename = os.path.join(app.static_folder, 'models.json')
-    data = json.load(open(filename))
-    return render_template('models.html', data=data)
+    models = load_json('models.json')
+    return render_template('models.html', models=models)
 
 
 @app.route('/results')
 def results():
-    filename = os.path.join(app.static_folder, 'results.json')
-    resp = json.load(open(filename))
-
+    results = load_json('results.json')
     time_series = []
-    for name, values in resp.items():
+    for name, values in results.items():
         ts = {
             'id': name,
             'values': {
@@ -90,7 +92,9 @@ def results():
 
 @app.route('/run')
 def run():
-    return render_template('run.html')
+    models = load_json('models.json')
+    state = load_json('run.json')
+    return render_template('run.html', state=state, models=models)
 
 
 if __name__ == '__main__':

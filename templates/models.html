@@ -4,14 +4,14 @@
 
 {% block content %}
     <h1>Models</h1>
-    {% if data %}
-        {% for item in data %}
+    {% if models %}
+        {% for model in models %}
             <div class="card shadow my-5">
                 <div class="card-header">
-                    <h1>{{ item.model_name_user }}</h1>
+                    <h1>{{ model.model_name_user }}</h1>
                     <dl>
-                        <p>System name: <strong>{{ item.model_system_name }}</strong></p>
-                        <p>Author: <strong>{{ item.author }}</strong></p>
+                        <p>System name: <strong>{{ model.model_system_name }}</strong></p>
+                        <p>Author: <strong>{{ model.author }}</strong></p>
                     </dl>
                 </div>
                 <div class="card-body">
@@ -29,7 +29,7 @@
                         </tr>
                         </thead>
                         <tbody>
-                        {% for key, value in item.inputs.items() %}
+                        {% for key, value in model.inputs.items() %}
                             <tr>
                                 <th scope="row">{{ value.series_id }}</th>
                                 <td>{{ value.series_name_user }}</td>
@@ -57,7 +57,7 @@
                         </tr>
                         </thead>
                         <tbody>
-                        {% for key, value in item.outputs.items() %}
+                        {% for key, value in model.outputs.items() %}
                             <tr>
                                 <th scope="row">{{ value.series_id }}</th>
                                 <td>{{ value.series_name_user }}</td>
@@ -74,6 +74,6 @@
             </div>
         {% endfor %}
     {% else %}
-        <h1>No data</h1>
+        <h1>No models</h1>
     {% endif %}
 {% endblock %}

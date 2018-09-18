@@ -1,0 +1,42 @@
+[
+  {
+    "command": "start_day",
+    "start_day": "2018-01-02"
+  },
+  {
+    "command": "number_of_days",
+    "number_of_days": 3
+  },
+  {
+    "command": "exe_models",
+    "include": [
+      "model_0",
+      "model_1"
+    ]
+  },
+  {
+    "command": "change_input_series_one_model",
+    "model_system_name": "model_1",
+    "input_source_initial": "series_10",
+    "input_source_final": "series_5"
+  },
+  {
+    "command": "change_input_series_all_models",
+    "input_source_initial": "series_11",
+    "input_source_final": "series_6"
+  },
+  {
+    "command": "change_timeseries_value_several_days",
+    "input_source_initial": "series_10",
+    "first_day": "2018-01-05",
+    "number_of_days": 5,
+    "new_value": 0.35
+  },
+  {
+    "command": "change_timeseries_value_several_days_add_delta",
+    "input_source_final": "series_11",
+    "first_day": "2018-01-01",
+    "number_of_days": 2,
+    "delta": 5
+  }
+]
