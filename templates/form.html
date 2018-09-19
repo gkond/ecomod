@@ -1,0 +1,87 @@
+<div class="form-group row">
+    <label for="start_day" class="col-sm-2 col-form-label">Start day</label>
+    <div class="col-auto">
+        <input type="date" class="form-control" id="start_day" name="start_day"
+               value="{{ commands.start_day[0].start_day }}">
+    </div>
+</div>
+
+<div class="form-group row">
+    <label for="number_of_days" class="col-sm-2 col-form-label">Number of days</label>
+    <div class="col-auto">
+        <input type="number" class="form-control" id="number_of_days" name="number_of_days"
+               value="{{ commands.number_of_days[0].number_of_days }}">
+    </div>
+</div>
+
+<div class="form-group row">
+    <label for="exe_models" class="col-sm-2 col-form-label">Exec models</label>
+    <div class="col-auto">
+        <select id="exe_models" name="exe_models" class="form-control" multiple>
+            {% for model in models %}
+                <option
+                        value="{{ model.model_system_name }}"
+                        {% if model.model_system_name in commands.exe_models[0].include %}selected{% endif %}
+                >
+                    {{ model.model_name_user }}:{{ model.author }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+{% for command in commands.change_input_series_one_model %}
+    <div class="form-group row">
+        <label for="change_input_series_one_model_name" class="col-sm-2 col-form-label">Change input series one
+            model</label>
+        <div class="col-auto">
+            <div class="form-inline">
+                <label for="change_input_series_one_model_initial" class="mr-2">Initial</label>
+                <select id="change_input_series_one_model_final" name="change_input_series_one_model_final"
+                        class="form-control">
+                    {% for series in get_models_series([command.model_system_name]) %}
+                        <option
+                                value="{{ series.series_name_system }}"
+                                {% if series.series_name_system in command.input_source_initial %}selected{% endif %}
+                        >
+                            {{ series.series_name_user }}:{{ series.series_name_system }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <label for="change_input_series_one_model_final" class="mx-2">Final</label>
+                <select id="change_input_series_one_model_name" name="change_input_series_one_model_name"
+                        class="form-control mr-4">
+                    {% for series in get_models_series([]) %}
+                        <option
+                                value="{{ series.series_name_system }}"
+                                {% if series.series_name_system in command.input_source_final %}selected{% endif %}
+                        >
+                            {{ series.series_name_user }}:{{ series.series_name_system }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <select id="change_input_series_one_model_initial" name="change_input_series_one_model_initial"
+                        class="form-control">
+                    {% for model in get_models(commands.exe_models[0].include) %}
+                        <option
+                                value="{{ model.model_system_name }}"
+                                {% if model.model_system_name in commands.exe_models[0].include %}selected{% endif %}
+                        >
+                            {{ model.model_name_user }}:{{ model.author }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+{% endfor %}
+
+<span></span>
+
+<div class="form-group row">
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary mb-2">Submit</button>
+    </div>
+</div>
+
+

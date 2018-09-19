@@ -1,13 +1,19 @@
-from flask import Flask
-from flask import render_template
+from flask import Flask, render_template, request, jsonify
+from flask_bootstrap import Bootstrap
+from flask_wtf import FlaskForm
+from wtforms import IntegerField, DateField, SelectMultipleField, validators
+from datetime import datetime
 import os.path
 import json
 import re
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'secret'
+
+Bootstrap(app)
 
 
-def load_json (name):
+def load_json(name):
     filename = os.path.join(app.static_folder, name)
     return json.load(open(filename))
 
@@ -90,11 +96,72 @@ def results():
     return render_template('results.html', results=results, time_series=time_series)
 
 
-@app.route('/run')
+class RunForm(FlaskForm):
+    start_day = DateField('Start day', format='%Y-%m-%d')
+    number_of_days = IntegerField('Number of days')
+    exe_models = SelectMultipleField('Execute models', choices=[])
+    change_one_model = FieldList(FormField(ChangeOneModelForm), min_entries=0)
+    change_all_models = FieldList(FormField(ChangeAllModelsForm), min_entries=0)
+    change_input_value_new = FieldList(FormField(ChangeInputValueNew), min_entries=0)
+    change_input_value_delta = FieldList(FormField(ChangeInputValueDelta), min_entries=0)
+
+
+
+@app.route('/run', methods=['GET', 'POST'])
 def run():
     models = load_json('models.json')
     state = load_json('run.json')
-    return render_template('run.html', state=state, models=models)
+
+    def getCommand(command):
+        return [item for item in state if item['command'] == command]
+
+    def getModelsChoices():
+        return [(
+            model['model_system_name'],
+            model['model_name_user'] + ':' + model['author']
+        ) for model in models]
+
+    def getInputsChoicesByModel(name):
+        model = next(item for item in models if item['model_system_name'] == name)
+        return [(
+            value['series_name_system'],
+            value['series_name_system'] + ':' + value['series_name_user']
+        ) for key, value in model['inputs'].iteritems()]
+
+    def getInputsChoices():
+        list = [getInputsChoicesByModel(model['model_system_name']) for model in models]
+        return [item for sublist in list for item in sublist]
+
+    # if request.method == 'GET':
+    form = RunForm()
+    form.exe_models.choices = getModelsChoices()
+
+    if form.validate_on_submit():
+        return render_template('run_success.html', form=form)
+
+    form.start_day.data = datetime.strptime(getCommand('start_day')[0]['start_day'], '%Y-%m-%d')
+    form.number_of_days.data = getCommand('number_of_days')[0]['number_of_days']
+    form.exe_models.data = getCommand('exe_models')[0]['include']
+
+    for sub_form in form.change_one_model:
+        sub_form.model.choices = getModelsChoices()
+        sub_form.input_initial.choices = getInputsChoices()
+        print(sub_form.input_initial.default)
+        sub_form.input_initial.default = 'seires_6'
+        print(sub_form.input_initial.default)
+        sub_form.input_final.choices = getInputsChoices()
+
+    for sub_form in form.change_all_models:
+        sub_form.input_initial.choices = getInputsChoices()
+        sub_form.input_final.choices = getInputsChoices()
+
+    for sub_form in form.change_input_value_new:
+        sub_form.input_initial.choices = getInputsChoices()
+
+    for sub_form in form.change_input_value_delta:
+        sub_form.input_initial.choices = getInputsChoices()
+
+    return render_template('run2.html', form=form)
 
 
 if __name__ == '__main__':

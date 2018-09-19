@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Run modeling
+{% endblock %}
+
+{% block content %}
+    <h1>Modeling is running!</h1>
+    <div class="mt-5">
+        {% for field in form %}
+            {% if field.name != 'csrf_token' %}
+                <div class="row my-4">
+                    <div class="col-sm-2">
+                        {{ field.label.text }}
+                    </div>
+                    <div class="col-auto">
+                        {% if field.data is iterable %}
+                            {{ field.data | list | join (', ') }}
+                        {% else %}
+                            {{ field.data }}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+{% endblock %}
