@@ -143,6 +143,13 @@ def run():
     form.number_of_days.data = getCommand('number_of_days')[0]['number_of_days']
     form.exe_models.data = getCommand('exe_models')[0]['include']
 
+    if form.validate_on_submit():
+        return render_template('run_success.html', form=form)
+
+    form.start_day.data = datetime.strptime(getCommand('start_day')[0]['start_day'], '%Y-%m-%d')
+    form.number_of_days.data = getCommand('number_of_days')[0]['number_of_days']
+    form.exe_models.data = getCommand('exe_models')[0]['include']
+
     for sub_form in form.change_one_model:
         sub_form.model.choices = getModelsChoices()
         sub_form.input_initial.choices = getInputsChoices()
