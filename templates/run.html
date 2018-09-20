@@ -6,26 +6,6 @@
     Run modeling
 {% endblock %}
 
-{% block head %}
-    {{ super() }}
-    <script>
-        {#var state = {{ state|tojson }};#}
-        {#$.ajax({#}
-        {#    type: 'POST',#}
-        {#    contentType: 'application/json',#}
-        {#    url: '/form',#}
-        {#    dataType: 'json',#}
-        {#    data: JSON.stringify(state),#}
-        {#    success: function (result) {#}
-        {#        $("#form").append(result.html);#}
-        {#    },#}
-        {#    error: function (result) {#}
-        {#        console.log('error', result);#}
-        {#    }#}
-        {# });#}
-    </script>
-{% endblock %}
-
 {% block content %}
     <h1>Run modeling</h1>
     <form method="post" action="/run" class="mt-5">

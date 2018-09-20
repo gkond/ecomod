@@ -106,38 +106,26 @@ class RunForm(FlaskForm):
 @app.route('/run', methods=['GET', 'POST'])
 def run():
     models = load_json('models.json')
-    default_state = load_json('run.json')
-
-    def getCommand(command):
-        return [item for item in default_state if item['command'] == command]
-
     def getModelsChoices():
         return [
             (model['model_system_name'], model['model_name_user'] + ':' + model['author'])
             for model in models
         ]
 
-    def getInputsChoicesByModel(name):
-        model = next(item for item in models if item['model_system_name'] == name)
-        return [
-            (value['series_name_system'], value['series_name_system'] + ':' + value['series_name_user'])
-            for key, value in model['inputs'].iteritems()
-        ]
-
-    def getInputsChoices():
-        list = [getInputsChoicesByModel(model['model_system_name']) for model in models]
-        return [item for sublist in list for item in sublist]
-
-    # if request.method == 'GET':
     form = RunForm()
     form.exe_models.choices = getModelsChoices()
 
     if form.validate_on_submit():
+        # actually run modeling here
         return render_template('run_success.html', form=form)
 
-    form.start_day.data = datetime.strptime(getCommand('start_day')[0]['start_day'], '%Y-%m-%d')
-    form.number_of_days.data = getCommand('number_of_days')[0]['number_of_days']
-    form.exe_models.data = getCommand('exe_models')[0]['include']
+    default_state = load_json('run.json')
+    def getStateValue(command):
+        return [item for item in default_state if item['command'] == command]
+
+    form.start_day.data = datetime.strptime(getStateValue('start_day')[0]['start_day'], '%Y-%m-%d')
+    form.number_of_days.data = getStateValue('number_of_days')[0]['number_of_days']
+    form.exe_models.data = getStateValue('exe_models')[0]['include']
 
     return render_template('run.html', form=form)
 
