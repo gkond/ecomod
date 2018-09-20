@@ -3,6 +3,7 @@ from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
 from wtforms import IntegerField, DateField, SelectMultipleField, validators
 from datetime import datetime
+from werkzeug.datastructures import MultiDict
 import os.path
 import json
 import re
@@ -97,36 +98,31 @@ def results():
 
 
 class RunForm(FlaskForm):
-    start_day = DateField('Start day', format='%Y-%m-%d')
-    number_of_days = IntegerField('Number of days')
-    exe_models = SelectMultipleField('Execute models', choices=[])
-    change_one_model = FieldList(FormField(ChangeOneModelForm), min_entries=0)
-    change_all_models = FieldList(FormField(ChangeAllModelsForm), min_entries=0)
-    change_input_value_new = FieldList(FormField(ChangeInputValueNew), min_entries=0)
-    change_input_value_delta = FieldList(FormField(ChangeInputValueDelta), min_entries=0)
-
+    start_day = DateField('Start day', [validators.required(), ], '%Y-%m-%d')
+    number_of_days = IntegerField('Number of days', [validators.required()])
+    exe_models = SelectMultipleField('Execute models', [validators.required()])
 
 
 @app.route('/run', methods=['GET', 'POST'])
 def run():
     models = load_json('models.json')
-    state = load_json('run.json')
+    default_state = load_json('run.json')
 
     def getCommand(command):
-        return [item for item in state if item['command'] == command]
+        return [item for item in default_state if item['command'] == command]
 
     def getModelsChoices():
-        return [(
-            model['model_system_name'],
-            model['model_name_user'] + ':' + model['author']
-        ) for model in models]
+        return [
+            (model['model_system_name'], model['model_name_user'] + ':' + model['author'])
+            for model in models
+        ]
 
     def getInputsChoicesByModel(name):
         model = next(item for item in models if item['model_system_name'] == name)
-        return [(
-            value['series_name_system'],
-            value['series_name_system'] + ':' + value['series_name_user']
-        ) for key, value in model['inputs'].iteritems()]
+        return [
+            (value['series_name_system'], value['series_name_system'] + ':' + value['series_name_user'])
+            for key, value in model['inputs'].iteritems()
+        ]
 
     def getInputsChoices():
         list = [getInputsChoicesByModel(model['model_system_name']) for model in models]
@@ -143,32 +139,7 @@ def run():
     form.number_of_days.data = getCommand('number_of_days')[0]['number_of_days']
     form.exe_models.data = getCommand('exe_models')[0]['include']
 
-    if form.validate_on_submit():
-        return render_template('run_success.html', form=form)
-
-    form.start_day.data = datetime.strptime(getCommand('start_day')[0]['start_day'], '%Y-%m-%d')
-    form.number_of_days.data = getCommand('number_of_days')[0]['number_of_days']
-    form.exe_models.data = getCommand('exe_models')[0]['include']
-
-    for sub_form in form.change_one_model:
-        sub_form.model.choices = getModelsChoices()
-        sub_form.input_initial.choices = getInputsChoices()
-        print(sub_form.input_initial.default)
-        sub_form.input_initial.default = 'seires_6'
-        print(sub_form.input_initial.default)
-        sub_form.input_final.choices = getInputsChoices()
-
-    for sub_form in form.change_all_models:
-        sub_form.input_initial.choices = getInputsChoices()
-        sub_form.input_final.choices = getInputsChoices()
-
-    for sub_form in form.change_input_value_new:
-        sub_form.input_initial.choices = getInputsChoices()
-
-    for sub_form in form.change_input_value_delta:
-        sub_form.input_initial.choices = getInputsChoices()
-
-    return render_template('run2.html', form=form)
+    return render_template('run.html', form=form)
 
 
 if __name__ == '__main__':
