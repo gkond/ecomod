@@ -174,9 +174,9 @@ def view_run():
     run_form.exe_models.choices = get_models_choices()
 
     if run_form.validate_on_submit():
-        def get_commands():
+        def get_commands(form):
             result = []
-            for field in run_form:
+            for field in form:
                 if field.name == 'start_day':
                     result.append({'command': field.name, 'start_day': str(field.data)})
                 elif field.name == 'number_of_days':
