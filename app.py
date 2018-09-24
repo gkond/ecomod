@@ -1,16 +1,15 @@
 from flask import Flask, render_template
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
-from wtforms import IntegerField, FloatField, DateField, SelectField, SelectMultipleField, FieldList, FormField, validators
+from wtforms import IntegerField, FloatField, DateField, SelectField, \
+    SelectMultipleField, FieldList, FormField, validators
 from datetime import datetime
 import os.path
 import json
 import re
-from pprint import pprint
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
-
 Bootstrap(app)
 
 
@@ -20,18 +19,18 @@ def load_json(name):
 
 
 @app.route('/')
-def home():
+def view_home():
     return render_template('home.html')
 
 
 @app.route('/models')
-def all_models():
+def view_models():
     models = load_json('models.json')
     return render_template('models.html', models=models)
 
 
 @app.route('/results')
-def results():
+def view_results():
     results = load_json('results.json')
     time_series = []
     for name, values in results.items():
@@ -92,39 +91,48 @@ def results():
 
         time_series.append(ts)
 
-    time_series.sort(key=lambda ts: ts['result_type'], reverse=False)
+    time_series.sort(key=lambda ts_item: ts_item['result_type'], reverse=False)
 
     return render_template('results.html', results=results, time_series=time_series)
+
 
 # TODO: figure out proper validation
 class NoValidationSelectField(SelectField):
     def pre_validate(self, form):
         """per_validation is disabled"""
 
+
 class ChangeOneModelForm(FlaskForm):
     def __init__(self, csrf_enabled=False, *args, **kwargs):
         super(ChangeOneModelForm, self).__init__(csrf_enabled=csrf_enabled, *args, **kwargs)
+
     model = NoValidationSelectField('Model', [validators.required()], choices=[])
     input_initial = NoValidationSelectField('Initial input', [validators.required()], choices=[])
     input_final = NoValidationSelectField('Final input', [validators.required()], choices=[])
 
+
 class ChangeAllModelsForm(FlaskForm):
     def __init__(self, csrf_enabled=False, *args, **kwargs):
         super(ChangeAllModelsForm, self).__init__(csrf_enabled=csrf_enabled, *args, **kwargs)
+
     input_initial = NoValidationSelectField('Initial input', [validators.required()], choices=[])
     input_final = NoValidationSelectField('Final input', [validators.required()], choices=[])
+
 
 class ChangeInputNewValue(FlaskForm):
     def __init__(self, csrf_enabled=False, *args, **kwargs):
         super(ChangeInputNewValue, self).__init__(csrf_enabled=csrf_enabled, *args, **kwargs)
+
     input_initial = NoValidationSelectField('Initial input', [validators.required()], choices=[])
     start_day = DateField('Start day', [validators.required()], '%Y-%m-%d')
     number_of_days = IntegerField('Number of days', [validators.required()])
     new_value = FloatField('Delta', [validators.required()])
 
+
 class ChangeInputAddDelta(FlaskForm):
     def __init__(self, csrf_enabled=False, *args, **kwargs):
         super(ChangeInputAddDelta, self).__init__(csrf_enabled=csrf_enabled, *args, **kwargs)
+
     input_initial = NoValidationSelectField('Initial input', [validators.required()], choices=[])
     start_day = DateField('Start day', [validators.required()], '%Y-%m-%d')
     number_of_days = IntegerField('Number of days', [validators.required()])
@@ -142,7 +150,7 @@ class RunForm(FlaskForm):
 
 
 @app.route('/run', methods=['GET', 'POST'])
-def run():
+def view_run():
     models = load_json('models.json')
 
     def get_models_choices():
@@ -159,14 +167,14 @@ def run():
         ) for key, value in model['inputs'].iteritems()]
 
     def get_inputs_choices():
-        list = [get_inputs_choices_by_model(model['model_system_name']) for model in models]
-        return [item for sublist in list for item in sublist]
+        inputs_by_models = [get_inputs_choices_by_model(model['model_system_name']) for model in models]
+        return [item for inputs in inputs_by_models for item in inputs]
 
     run_form = RunForm()
     run_form.exe_models.choices = get_models_choices()
 
     if run_form.validate_on_submit():
-        def get_commands(form):
+        def get_commands():
             result = []
             for field in run_form:
                 if field.name == 'start_day':
@@ -218,29 +226,30 @@ def run():
 
     # get default values
     default_state = load_json('run.json')
-    def getStateValues(command):
-        return [item for item in default_state if item['command'] == command]
+
+    def get_state_value(command_name):
+        return [item for item in default_state if item['command'] == command_name]
 
     # set default values for single fields
-    run_form.start_day.data = datetime.strptime(getStateValues('start_day')[0]['start_day'], '%Y-%m-%d')
-    run_form.number_of_days.data = getStateValues('number_of_days')[0]['number_of_days']
-    run_form.exe_models.data = getStateValues('exe_models')[0]['include']
+    run_form.start_day.data = datetime.strptime(get_state_value('start_day')[0]['start_day'], '%Y-%m-%d')
+    run_form.number_of_days.data = get_state_value('number_of_days')[0]['number_of_days']
+    run_form.exe_models.data = get_state_value('exe_models')[0]['include']
 
     # set default values for compound fields
     if not run_form.change_input_series_one_model:
-        for command in getStateValues('change_input_series_one_model'):
+        for command in get_state_value('change_input_series_one_model'):
             run_form.change_input_series_one_model.append_entry()
     if not run_form.change_input_series_all_models:
-        for command in getStateValues('change_input_series_all_models'):
+        for command in get_state_value('change_input_series_all_models'):
             run_form.change_input_series_all_models.append_entry()
     if not run_form.change_timeseries_value_several_days:
-        for command in getStateValues('change_timeseries_value_several_days'):
+        for command in get_state_value('change_timeseries_value_several_days'):
             run_form.change_timeseries_value_several_days.append_entry()
     if not run_form.change_timeseries_value_several_days_add_delta:
-        for command in getStateValues('change_timeseries_value_several_days_add_delta'):
+        for command in get_state_value('change_timeseries_value_several_days_add_delta'):
             run_form.change_timeseries_value_several_days_add_delta.append_entry()
 
-    for index, command in enumerate(getStateValues('change_input_series_one_model')):
+    for index, command in enumerate(get_state_value('change_input_series_one_model')):
         sub_form = run_form.change_input_series_one_model[index]
         sub_form.model.choices = get_models_choices()
         sub_form.model.data = command['model_system_name']
@@ -248,20 +257,20 @@ def run():
         sub_form.input_initial.data = command['input_source_initial']
         sub_form.input_final.choices = get_inputs_choices()
         sub_form.input_final.data = command['input_source_final']
-    for index, command in enumerate(getStateValues('change_input_series_all_models')):
+    for index, command in enumerate(get_state_value('change_input_series_all_models')):
         sub_form = run_form.change_input_series_all_models[index]
         sub_form.input_initial.choices = get_inputs_choices()
         sub_form.input_initial.data = command['input_source_initial']
         sub_form.input_final.choices = get_inputs_choices()
         sub_form.input_final.data = command['input_source_final']
-    for index, command in enumerate(getStateValues('change_timeseries_value_several_days')):
+    for index, command in enumerate(get_state_value('change_timeseries_value_several_days')):
         sub_form = run_form.change_timeseries_value_several_days[index]
         sub_form.input_initial.choices = get_inputs_choices()
         sub_form.input_initial.data = command['input_source_initial']
         sub_form.start_day.data = datetime.strptime(command['start_day'], '%Y-%m-%d')
         sub_form.number_of_days.data = command['number_of_days']
         sub_form.new_value.data = command['new_value']
-    for index, command in enumerate(getStateValues('change_timeseries_value_several_days_add_delta')):
+    for index, command in enumerate(get_state_value('change_timeseries_value_several_days_add_delta')):
         sub_form = run_form.change_timeseries_value_several_days_add_delta[index]
         sub_form.input_initial.choices = get_inputs_choices()
         sub_form.input_initial.data = command['input_source_initial']
