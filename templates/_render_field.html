@@ -13,16 +13,18 @@
 {% macro render_sub_form(form, name) %}
     <div class="form-group row">
         <label class="col-sm-2 col-form-label">{{ name }}</label>
-        <div class="col-auto">
-            {% for field in form %}
-                <div class="row">
-                    <div class="col-auto">
-                        {{ field(class_='', **kwargs)|safe }}
-                        {% for error in field.errors %}
-                            <div class="alert alert-danger mt-2">{{ error }}</div>
-                        {% endfor %}
+        <div class="col-10">
+            {% for sub_form in form %}
+                {% for field in sub_form %}
+                    <div class="form-group row">
+                        <div class="col-2">
+                            {{ field.label(class_='col-form-label') }}
+                        </div>
+                        <div class="col-auto">
+                            {{ field(class_='form-control', **kwargs)|safe }}
+                        </div>
                     </div>
-                </div>
+                {% endfor %}
             {% endfor %}
         </div>
     </div>
