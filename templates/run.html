@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
-{% from "_render_field.html" import render_field %}
+{% from "_render_field.html" import render_field, render_sub_form %}
 
 {% block title %}
     Run modeling
@@ -12,6 +12,10 @@
         {{ render_field(form.start_day) }}
         {{ render_field(form.number_of_days) }}
         {{ render_field(form.exe_models) }}
+        {{ render_sub_form(form.change_input_series_one_model, 'Change one model') }}
+        {{ render_sub_form(form.change_input_series_all_models, 'Change all models') }}
+        {{ render_sub_form(form.change_timeseries_value_several_days, 'Change input by value') }}
+        {{ render_sub_form(form.change_timeseries_value_several_days_add_delta, 'Change input by delta') }}
 
         {{ wtf.form_errors(form, hiddens="only") }}
 

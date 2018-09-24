@@ -6,22 +6,12 @@
 
 {% block content %}
     <h1>Modeling is running!</h1>
-    <div class="mt-5">
-        {% for field in form %}
-            {% if field.name != 'csrf_token' %}
-                <div class="row my-4">
-                    <div class="col-sm-2">
-                        {{ field.label.text }}
-                    </div>
-                    <div class="col-auto">
-                        {% if field.data is iterable %}
-                            {{ field.data | list | join (', ') }}
-                        {% else %}
-                            {{ field.data }}
-                        {% endif %}
-                    </div>
-                </div>
-            {% endif %}
-        {% endfor %}
+    <div class="row mt-5">
+        <div class="col-sm-12">
+            <h2>List of commands</h2>
+        </div>
+        <div class="col-sm-6">
+            <textarea class="form-control" rows="15" readonly>{{ commands }}</textarea>
+        </div>
     </div>
 {% endblock %}

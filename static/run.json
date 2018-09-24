@@ -40,7 +40,7 @@
   },
   {
     "command": "change_timeseries_value_several_days_add_delta",
-    "input_source_final": "series_11",
+    "input_source_initial": "series_11",
     "start_day": "2018-01-01",
     "number_of_days": 2,
     "delta": 5

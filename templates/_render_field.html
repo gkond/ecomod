@@ -3,8 +3,26 @@
         <label for="{{ field.name }}" class="col-sm-2 col-form-label">{{ field.label.text }}</label>
         <div class="col-auto">
             {{ field(class_='form-control', **kwargs)|safe }}
-                {% for error in field.errors %}
+            {% for error in field.errors %}
                 <div class="alert alert-danger mt-2">{{ error }}</div>
+            {% endfor %}
+        </div>
+    </div>
+{% endmacro %}
+
+{% macro render_sub_form(form, name) %}
+    <div class="form-group row">
+        <label class="col-sm-2 col-form-label">{{ name }}</label>
+        <div class="col-auto">
+            {% for field in form %}
+                <div class="row">
+                    <div class="col-auto">
+                        {{ field(class_='', **kwargs)|safe }}
+                        {% for error in field.errors %}
+                            <div class="alert alert-danger mt-2">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
             {% endfor %}
         </div>
     </div>
