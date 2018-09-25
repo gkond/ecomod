@@ -1,7 +1,29 @@
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% macro render_form(form) %}
+    <form method="post" action="/run" class="mt-5">
+        {{ render_field(form.start_day) }}
+        {{ render_field(form.number_of_days) }}
+        {{ render_field(form.exe_models) }}
+
+        {{ render_sub_form(form.change_input_series_one_model, 'Change one model') }}
+        {{ render_sub_form(form.change_input_series_all_models, 'Change all models') }}
+        {{ render_sub_form(form.change_timeseries_value_several_days, 'Change input by value') }}
+        {{ render_sub_form(form.change_timeseries_value_several_days_add_delta, 'Change input by delta') }}
+
+        {{ wtf.form_errors(form, hiddens="only") }}
+
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">Run modeling</button>
+        </div>
+        {{ form.hidden_tag() }}
+    </form>
+{% endmacro %}
+
 {% macro render_field(field) %}
     <div class="form-group row">
         <label for="{{ field.name }}" class="col-sm-2 col-form-label">{{ field.label.text }}</label>
-        <div class="col-auto">
+        <div class="col-4">
             {{ field(class_='form-control', **kwargs)|safe }}
             {% for error in field.errors %}
                 <div class="alert alert-danger mt-2">{{ error }}</div>
@@ -11,21 +33,43 @@
 {% endmacro %}
 
 {% macro render_sub_form(form, name) %}
-    <div class="form-group row">
-        <label class="col-sm-2 col-form-label">{{ name }}</label>
-        <div class="col-10">
-            {% for sub_form in form %}
+    <div class="form-group row mt-5">
+        <div class="col-6">
+            <h4>{{ name }}</h4>
+        </div>
+    </div>
+    {% for sub_form in form %}
+        <div class="form-group row">
+            <div class="col-6">
                 {% for field in sub_form %}
                     <div class="form-group row">
-                        <div class="col-2">
+                        <div class="col-4">
                             {{ field.label(class_='col-form-label') }}
                         </div>
-                        <div class="col-auto">
+                        <div class="col-8">
                             {{ field(class_='form-control', **kwargs)|safe }}
                         </div>
                     </div>
                 {% endfor %}
-            {% endfor %}
+            </div>
+            <div class="col-auto">
+                {% if loop.last %}
+                <button type="button" class="btn btn-light btn-sm form-control"
+                        data-command="remove" data-field="{{ form.name }}" data-index="{{ loop.index }}">
+                    ×
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+    <div class="form-group row">
+        <div class="col-6">
+            <div class="float-right">
+                <button type="button" class="btn btn-light btn-sm form-control"
+                        data-command="add" data-field="{{ form.name }}">
+                    Add command
+                </button>
+            </div>
         </div>
     </div>
 {% endmacro %}

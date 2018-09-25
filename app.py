@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, jsonify
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
 from wtforms import IntegerField, FloatField, DateField, SelectField, \
@@ -7,6 +7,9 @@ from datetime import datetime
 import os.path
 import json
 import re
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
@@ -106,25 +109,25 @@ class ChangeOneModelForm(FlaskForm):
     def __init__(self, csrf_enabled=False, *args, **kwargs):
         super(ChangeOneModelForm, self).__init__(csrf_enabled=csrf_enabled, *args, **kwargs)
 
-    model = NoValidationSelectField('Model', [validators.required()], choices=[])
-    input_initial = NoValidationSelectField('Initial input', [validators.required()], choices=[])
-    input_final = NoValidationSelectField('Final input', [validators.required()], choices=[])
+    model_system_name = NoValidationSelectField('Model', [validators.required()], choices=[])
+    input_source_initial = NoValidationSelectField('Initial input', [validators.required()], choices=[])
+    input_source_final = NoValidationSelectField('Final input', [validators.required()], choices=[])
 
 
 class ChangeAllModelsForm(FlaskForm):
     def __init__(self, csrf_enabled=False, *args, **kwargs):
         super(ChangeAllModelsForm, self).__init__(csrf_enabled=csrf_enabled, *args, **kwargs)
 
-    input_initial = NoValidationSelectField('Initial input', [validators.required()], choices=[])
-    input_final = NoValidationSelectField('Final input', [validators.required()], choices=[])
+    input_source_initial = NoValidationSelectField('Initial input', [validators.required()], choices=[])
+    input_source_final = NoValidationSelectField('Final input', [validators.required()], choices=[])
 
 
 class ChangeInputNewValue(FlaskForm):
     def __init__(self, csrf_enabled=False, *args, **kwargs):
         super(ChangeInputNewValue, self).__init__(csrf_enabled=csrf_enabled, *args, **kwargs)
 
-    input_initial = NoValidationSelectField('Initial input', [validators.required()], choices=[])
-    start_day = DateField('Start day', [validators.required()], '%Y-%m-%d')
+    input_source_initial = NoValidationSelectField('Initial input', [validators.required()], choices=[])
+    start_day = DateField('Start day', [validators.required()], '%Y-%m-%d', default=datetime.today())
     number_of_days = IntegerField('Number of days', [validators.required()])
     new_value = FloatField('Delta', [validators.required()])
 
@@ -133,14 +136,14 @@ class ChangeInputAddDelta(FlaskForm):
     def __init__(self, csrf_enabled=False, *args, **kwargs):
         super(ChangeInputAddDelta, self).__init__(csrf_enabled=csrf_enabled, *args, **kwargs)
 
-    input_initial = NoValidationSelectField('Initial input', [validators.required()], choices=[])
-    start_day = DateField('Start day', [validators.required()], '%Y-%m-%d')
+    input_source_initial = NoValidationSelectField('Initial input', [validators.required()], choices=[])
+    start_day = DateField('Start day', [validators.required()], '%Y-%m-%d', default=datetime.today())
     number_of_days = IntegerField('Number of days', [validators.required()])
     delta = FloatField('New Value', [validators.required()])
 
 
 class RunForm(FlaskForm):
-    start_day = DateField('Start day', [validators.required()], '%Y-%m-%d')
+    start_day = DateField('Start day', [validators.required()], '%Y-%m-%d', default=datetime.today())
     number_of_days = IntegerField('Number of days', [validators.required()])
     exe_models = SelectMultipleField('Execute models', [validators.required()])
     change_input_series_one_model = FieldList(FormField(ChangeOneModelForm), min_entries=0)
@@ -149,136 +152,178 @@ class RunForm(FlaskForm):
     change_timeseries_value_several_days_add_delta = FieldList(FormField(ChangeInputAddDelta), min_entries=0)
 
 
-@app.route('/run', methods=['GET', 'POST'])
-def view_run():
+def get_models_choices():
     models = load_json('models.json')
+    return [
+        (model['model_system_name'], model['model_name_user'] + ':' + model['author'])
+        for model in models
+    ]
 
-    def get_models_choices():
-        return [
-            (model['model_system_name'], model['model_name_user'] + ':' + model['author'])
-            for model in models
-        ]
 
-    def get_inputs_choices_by_model(name):
-        model = next(item for item in models if item['model_system_name'] == name)
-        return [(
-            value['series_name_system'],
-            value['series_name_system'] + ':' + value['series_name_user']
-        ) for key, value in model['inputs'].iteritems()]
+def get_inputs_choices_by_model(name):
+    models = load_json('models.json')
+    model = next(item for item in models if item['model_system_name'] == name)
+    return [(
+        value['series_name_system'],
+        value['series_name_system'] + ':' + value['series_name_user']
+    ) for key, value in model['inputs'].iteritems()]
 
-    def get_inputs_choices():
-        inputs_by_models = [get_inputs_choices_by_model(model['model_system_name']) for model in models]
-        return [item for inputs in inputs_by_models for item in inputs]
 
+def get_inputs_choices():
+    models = load_json('models.json')
+    inputs_by_models = [get_inputs_choices_by_model(model['model_system_name']) for model in models]
+    return [item for inputs in inputs_by_models for item in inputs]
+
+
+# returns list of commands of form data
+def get_commands(form):
+    result = []
+    for field in form:
+        if field.name == 'start_day':
+            result.append({'command': field.name, 'start_day': str(field.data)})
+        elif field.name == 'number_of_days':
+            result.append({'command': field.name, 'number_of_days': field.data})
+        elif field.name == 'exe_models':
+            result.append({'command': field.name, 'include': field.data})
+        elif field.name == 'change_input_series_one_model':
+            for entry in field.entries:
+                result.append({
+                    'command': field.name,
+                    'model_system_name': entry.model_system_name.data,
+                    'input_source_initial': entry.input_source_initial.data,
+                    'input_source_final': entry.input_source_final.data
+                })
+        elif field.name == 'change_input_series_all_models':
+            for entry in field.entries:
+                result.append({
+                    'command': field.name,
+                    'input_source_initial': entry.input_source_initial.data,
+                    'input_source_final': entry.input_source_final.data
+                })
+        elif field.name == 'change_timeseries_value_several_days':
+            for entry in field.entries:
+                result.append({
+                    'command': field.name,
+                    'input_source_initial': entry.input_source_initial.data,
+                    'start_day': str(entry.start_day.data),
+                    'number_of_days': entry.number_of_days.data,
+                    'new_value': entry.new_value.data
+                })
+        elif field.name == 'change_timeseries_value_several_days_add_delta':
+            for entry in field.entries:
+                result.append({
+                    'command': field.name,
+                    'input_source_initial': entry.input_source_initial.data,
+                    'start_day': str(entry.start_day.data),
+                    'number_of_days': entry.number_of_days.data,
+                    'delta': entry.delta.data
+                })
+
+    return result
+
+
+# creates flask form using data from request.data if any
+def get_run_form():
     run_form = RunForm()
+    # dynamically fill list or select options for available models
     run_form.exe_models.choices = get_models_choices()
+    return run_form
 
-    if run_form.validate_on_submit():
-        def get_commands(form):
-            result = []
-            for field in form:
-                if field.name == 'start_day':
-                    result.append({'command': field.name, 'start_day': str(field.data)})
-                elif field.name == 'number_of_days':
-                    result.append({'command': field.name, 'number_of_days': field.data})
-                elif field.name == 'exe_models':
-                    result.append({'command': field.name, 'include': field.data})
-                elif field.name == 'change_input_series_one_model':
-                    for entry in field.entries:
-                        result.append({
-                            'command': field.name,
-                            'model': entry.model.data,
-                            'input_initial': entry.input_initial.data,
-                            'input_final': entry.input_final.data
-                        })
-                elif field.name == 'change_input_series_all_models':
-                    for entry in field.entries:
-                        result.append({
-                            'command': field.name,
-                            'input_initial': entry.input_initial.data,
-                            'input_final': entry.input_final.data
-                        })
-                elif field.name == 'change_timeseries_value_several_days':
-                    for entry in field.entries:
-                        result.append({
-                            'command': field.name,
-                            'input_initial': entry.input_initial.data,
-                            'start_day': str(entry.start_day.data),
-                            'number_of_days': entry.number_of_days.data,
-                            'new_value': entry.new_value.data
-                        })
-                elif field.name == 'change_timeseries_value_several_days_add_delta':
-                    for entry in field.entries:
-                        result.append({
-                            'command': field.name,
-                            'input_initial': entry.input_initial.data,
-                            'start_day': str(entry.start_day.data),
-                            'number_of_days': entry.number_of_days.data,
-                            'delta': entry.delta.data
-                        })
 
-            return result
-
-        commands = get_commands(run_form)
-        # TODO: run modeling with commands
-
-        return render_template('run_success.html', commands=json.dumps(commands, sort_keys=True, indent=4))
-
-    # get default values
-    default_state = load_json('run.json')
-
-    def get_state_value(command_name):
-        return [item for item in default_state if item['command'] == command_name]
+# updates form with defaults from given commands
+def set_form_defaults(form, commands):
+    def get_command(command_name):
+        return [item for item in commands if item['command'] == command_name]
 
     # set default values for single fields
-    run_form.start_day.data = datetime.strptime(get_state_value('start_day')[0]['start_day'], '%Y-%m-%d')
-    run_form.number_of_days.data = get_state_value('number_of_days')[0]['number_of_days']
-    run_form.exe_models.data = get_state_value('exe_models')[0]['include']
+    if get_command('start_day'):
+        form.start_day.data = datetime.strptime(get_command('start_day')[0]['start_day'], '%Y-%m-%d')
+    if get_command('number_of_days'):
+        form.number_of_days.data = get_command('number_of_days')[0]['number_of_days']
+    if get_command('exe_models'):
+        form.exe_models.data = get_command('exe_models')[0]['include']
 
     # set default values for compound fields
-    if not run_form.change_input_series_one_model:
-        for command in get_state_value('change_input_series_one_model'):
-            run_form.change_input_series_one_model.append_entry()
-    if not run_form.change_input_series_all_models:
-        for command in get_state_value('change_input_series_all_models'):
-            run_form.change_input_series_all_models.append_entry()
-    if not run_form.change_timeseries_value_several_days:
-        for command in get_state_value('change_timeseries_value_several_days'):
-            run_form.change_timeseries_value_several_days.append_entry()
-    if not run_form.change_timeseries_value_several_days_add_delta:
-        for command in get_state_value('change_timeseries_value_several_days_add_delta'):
-            run_form.change_timeseries_value_several_days_add_delta.append_entry()
+    # TODO: avoid ifs, use if request.get instead
+    if not form.change_input_series_one_model:
+        for command in get_command('change_input_series_one_model'):
+            form.change_input_series_one_model.append_entry()
+    if not form.change_input_series_all_models:
+        for command in get_command('change_input_series_all_models'):
+            form.change_input_series_all_models.append_entry()
+    if not form.change_timeseries_value_several_days:
+        for command in get_command('change_timeseries_value_several_days'):
+            form.change_timeseries_value_several_days.append_entry()
+    if not form.change_timeseries_value_several_days_add_delta:
+        for command in get_command('change_timeseries_value_several_days_add_delta'):
+            form.change_timeseries_value_several_days_add_delta.append_entry()
 
-    for index, command in enumerate(get_state_value('change_input_series_one_model')):
-        sub_form = run_form.change_input_series_one_model[index]
-        sub_form.model.choices = get_models_choices()
-        sub_form.model.data = command['model_system_name']
-        sub_form.input_initial.choices = get_inputs_choices()
-        sub_form.input_initial.data = command['input_source_initial']
-        sub_form.input_final.choices = get_inputs_choices()
-        sub_form.input_final.data = command['input_source_final']
-    for index, command in enumerate(get_state_value('change_input_series_all_models')):
-        sub_form = run_form.change_input_series_all_models[index]
-        sub_form.input_initial.choices = get_inputs_choices()
-        sub_form.input_initial.data = command['input_source_initial']
-        sub_form.input_final.choices = get_inputs_choices()
-        sub_form.input_final.data = command['input_source_final']
-    for index, command in enumerate(get_state_value('change_timeseries_value_several_days')):
-        sub_form = run_form.change_timeseries_value_several_days[index]
-        sub_form.input_initial.choices = get_inputs_choices()
-        sub_form.input_initial.data = command['input_source_initial']
-        sub_form.start_day.data = datetime.strptime(command['start_day'], '%Y-%m-%d')
-        sub_form.number_of_days.data = command['number_of_days']
-        sub_form.new_value.data = command['new_value']
-    for index, command in enumerate(get_state_value('change_timeseries_value_several_days_add_delta')):
-        sub_form = run_form.change_timeseries_value_several_days_add_delta[index]
-        sub_form.input_initial.choices = get_inputs_choices()
-        sub_form.input_initial.data = command['input_source_initial']
-        sub_form.start_day.data = datetime.strptime(command['start_day'], '%Y-%m-%d')
-        sub_form.number_of_days.data = command['number_of_days']
-        sub_form.delta.data = command['delta']
+    default_day = datetime.today().strftime('%Y-%m-%d')
+    for index, command in enumerate(get_command('change_input_series_one_model')):
+        sub_form = form.change_input_series_one_model[index]
+        sub_form.model_system_name.choices = get_models_choices()
+        sub_form.model_system_name.data = command.get('model_system_name', '')
+        sub_form.input_source_initial.choices = get_inputs_choices()
+        sub_form.input_source_initial.data = command.get('input_source_initial', '')
+        sub_form.input_source_final.choices = get_inputs_choices()
+        sub_form.input_source_final.data = command.get('input_source_final', '')
+    for index, command in enumerate(get_command('change_input_series_all_models')):
+        sub_form = form.change_input_series_all_models[index]
+        sub_form.input_source_initial.choices = get_inputs_choices()
+        sub_form.input_source_initial.data = command.get('input_source_initial', '')
+        sub_form.input_source_final.choices = get_inputs_choices()
+        sub_form.input_source_final.data = command.get('input_source_final', '')
+    for index, command in enumerate(get_command('change_timeseries_value_several_days')):
+        sub_form = form.change_timeseries_value_several_days[index]
+        sub_form.input_source_initial.choices = get_inputs_choices()
+        sub_form.input_source_initial.data = command.get('input_source_initial', '')
+        sub_form.start_day.data = datetime.strptime(command.get('start_day', default_day), '%Y-%m-%d')
+        sub_form.number_of_days.data = command.get('number_of_days', '')
+        sub_form.new_value.data = command.get('new_value', '')
+    for index, command in enumerate(get_command('change_timeseries_value_several_days_add_delta')):
+        sub_form = form.change_timeseries_value_several_days_add_delta[index]
+        sub_form.input_source_initial.choices = get_inputs_choices()
+        sub_form.input_source_initial.data = command.get('input_source_initial', '')
+        sub_form.start_day.data = datetime.strptime(command.get('start_day', default_day), '%Y-%m-%d')
+        sub_form.number_of_days.data = command.get('number_of_days', '')
+        sub_form.delta.data = command.get('delta', '')
+
+
+@app.route('/run', methods=['GET', 'POST'])
+def view_run():
+    run_form = get_run_form()
+
+    if run_form.validate_on_submit():
+        commands = get_commands(run_form)
+        # TODO: run modeling with commands
+        return render_template('run_success.html', commands=json.dumps(commands, sort_keys=True, indent=4))
+
+    commands = load_json('run.json')
+    set_form_defaults(run_form, commands)
 
     return render_template('run.html', form=run_form)
+
+
+@app.route('/run/command/add', methods=['POST'])
+def view_run_add():
+    field = request.args['field']
+    run_form = get_run_form()
+    run_form[field].append_entry()
+    commands = get_commands(run_form)
+    set_form_defaults(run_form, commands)
+
+    return render_template('run_form.html', form=run_form)
+
+
+@app.route('/run/command/remove', methods=['POST'])
+def view_run_remove():
+    field = request.args['field']
+    run_form = get_run_form()
+    run_form[field].pop_entry()
+    commands = get_commands(run_form)
+    set_form_defaults(run_form, commands)
+
+    return render_template('run_form.html', form=run_form)
 
 
 if __name__ == '__main__':

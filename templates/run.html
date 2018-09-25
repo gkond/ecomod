@@ -1,27 +1,49 @@
 {% extends "base.html" %}
-{% import "bootstrap/wtf.html" as wtf %}
-{% from "_render_field.html" import render_field, render_sub_form %}
+{% from "_render_field.html" import render_form %}
 
 {% block title %}
     Run modeling
 {% endblock %}
 
+{% block head %}
+    {{ super() }}
+    <script>
+        function updateForm(url) {
+            var data = $('form').serialize()
+            $.post({
+                url: url,
+                data: data,
+                success: function (html) {
+                    $('.form-wrap').empty().html(html)
+                },
+                error: function (error) {
+                    console.error(error)
+                }
+            })
+        }
+
+        function addCommand(e) {
+            var field = $(e.target).data('field')
+
+            updateForm('/run/command/add?field=' + field)
+        }
+
+        function removeCommand(e) {
+            var field = $(e.target).data('field')
+
+            updateForm('/run/command/remove?field=' + field)
+        }
+
+        $(function () {
+            $("body").on('click', 'button[data-command=add]', addCommand)
+            $("body").on('click', 'button[data-command=remove]', removeCommand)
+        })
+    </script>
+{% endblock %}
+
 {% block content %}
     <h1>Run modeling</h1>
-    <form method="post" action="/run" class="mt-5">
-        {{ render_field(form.start_day) }}
-        {{ render_field(form.number_of_days) }}
-        {{ render_field(form.exe_models) }}
-        {{ render_sub_form(form.change_input_series_one_model, 'Change one model') }}
-        {{ render_sub_form(form.change_input_series_all_models, 'Change all models') }}
-        {{ render_sub_form(form.change_timeseries_value_several_days, 'Change input by value') }}
-        {{ render_sub_form(form.change_timeseries_value_several_days_add_delta, 'Change input by delta') }}
-
-        {{ wtf.form_errors(form, hiddens="only") }}
-
-        <div class="form-group">
-            <button type="submit" class="btn btn-primary mb-2">Submit</button>
-        </div>
-        {{ form.hidden_tag() }}
-    </form>
+    <div class="form-wrap">
+        {{ render_form(form) }}
+    </div>
 {% endblock %}
