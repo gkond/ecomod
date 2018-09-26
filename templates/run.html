@@ -23,7 +23,8 @@
                     "model_0",
                     "model_1"
                 ]
-            }];
+            }
+        ];
 
         function initForm() {
             var data = {commands: defaultCommands};
@@ -32,7 +33,9 @@
                 contentType: "application/json",
                 url: "/run/form/init",
                 data: JSON.stringify(data),
-                success: renderForm,
+                success: function (html) {
+                    $(".form-wrap").empty().html(html)
+                },
                 error: function (error) {
                     console.error(error)
                 }
@@ -44,47 +47,30 @@
             $.post({
                 url: url,
                 data: data,
-                success: renderForm,
+                success: function (html) {
+                    $(".form-wrap").empty().html(html)
+                },
                 error: function (error) {
                     console.error(error)
                 }
             })
         }
 
-        function addCommand(e) {
-            var field = $(e.target).data("field");
-
-            updateForm("/run/form/add/" + field)
-        }
-
-        function removeCommand(e) {
-            var field = $(e.target).data("field");
-
-            updateForm("/run/form/remove/" + field)
-        }
-
-        function renderForm(html) {
-            $(".form-wrap").empty().html(html)
-        }
-
-        function formSubmit(e) {
-            var data = $("form").serialize();
-            $.post({
-                url: '/run/form/submit',
-                data: data,
-                success: renderForm,
-                error: function (error) {
-                    console.error(error)
-                }
-            });
-            e.preventDefault()
-        }
-
         $(function () {
-            $("body").on("click", "button[data-command=add]", addCommand);
-            $("body").on("click", "button[data-command=remove]", removeCommand);
-            $("body").on("submit", "form", formSubmit);
-            initForm()
+            initForm();
+
+            $("body").on("click", "button[data-command=add]", function (e) {
+                var field = $(e.target).data("field");
+                updateForm("/run/form/add/" + field)
+            });
+            $("body").on("click", "button[data-command=remove]", function (e) {
+                var field = $(e.target).data("field");
+                updateForm("/run/form/remove/" + field)
+            });
+            $("body").on("submit", "form", function (e) {
+                updateForm("/run/form/submit");
+                e.preventDefault()
+            });
         })
     </script>
 {% endblock %}
