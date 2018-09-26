@@ -235,9 +235,15 @@ def set_form_defaults(form, commands):
     def get_command(command_name):
         return [item for item in commands if item['command'] == command_name]
 
+    def str_to_datetime(str):
+        if not str or str == 'None':
+            str = datetime.today().strftime('%Y-%m-%d')
+        str = str[:10]
+        return datetime.strptime(str, '%Y-%m-%d')
+
     # set default values for single fields
     if get_command('start_day'):
-        form.start_day.data = datetime.strptime(get_command('start_day')[0]['start_day'], '%Y-%m-%d')
+        form.start_day.data = str_to_datetime(get_command('start_day')[0]['start_day'])
     if get_command('number_of_days'):
         form.number_of_days.data = get_command('number_of_days')[0]['number_of_days']
     if get_command('exe_models'):
@@ -258,7 +264,6 @@ def set_form_defaults(form, commands):
         for command in get_command('change_timeseries_value_several_days_add_delta'):
             form.change_timeseries_value_several_days_add_delta.append_entry()
 
-    default_day = datetime.today().strftime('%Y-%m-%d')
     for index, command in enumerate(get_command('change_input_series_one_model')):
         sub_form = form.change_input_series_one_model[index]
         sub_form.model_system_name.choices = get_models_choices()
@@ -277,14 +282,14 @@ def set_form_defaults(form, commands):
         sub_form = form.change_timeseries_value_several_days[index]
         sub_form.input_source_initial.choices = get_inputs_choices()
         sub_form.input_source_initial.data = command.get('input_source_initial', '')
-        sub_form.start_day.data = datetime.strptime(command.get('start_day', default_day), '%Y-%m-%d')
+        sub_form.start_day.data = str_to_datetime(command.get('start_day', ''))
         sub_form.number_of_days.data = command.get('number_of_days', '')
         sub_form.new_value.data = command.get('new_value', '')
     for index, command in enumerate(get_command('change_timeseries_value_several_days_add_delta')):
         sub_form = form.change_timeseries_value_several_days_add_delta[index]
         sub_form.input_source_initial.choices = get_inputs_choices()
         sub_form.input_source_initial.data = command.get('input_source_initial', '')
-        sub_form.start_day.data = datetime.strptime(command.get('start_day', default_day), '%Y-%m-%d')
+        sub_form.start_day.data = str_to_datetime(command.get('start_day', ''))
         sub_form.number_of_days.data = command.get('number_of_days', '')
         sub_form.delta.data = command.get('delta', '')
 
