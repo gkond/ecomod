@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_render_field.html" import render_form %}
+{% from "_render_form.html" import render_form %}
 
 {% block title %}
     Run modeling
@@ -8,14 +8,43 @@
 {% block head %}
     {{ super() }}
     <script>
+        var defaultCommands = [
+            {
+                "command": "start_day",
+                "start_day": "2018-01-02"
+            },
+            {
+                "command": "number_of_days",
+                "number_of_days": 3
+            },
+            {
+                "command": "exe_models",
+                "include": [
+                    "model_0",
+                    "model_1"
+                ]
+            }];
+
+        function initForm() {
+            var data = {commands: defaultCommands};
+            $.ajax({
+                type: "POST",
+                contentType: "application/json",
+                url: "/run/form/init",
+                data: JSON.stringify(data),
+                success: renderForm,
+                error: function (error) {
+                    console.error(error)
+                }
+            })
+        }
+
         function updateForm(url) {
-            var data = $('form').serialize()
+            var data = $("form").serialize();
             $.post({
                 url: url,
                 data: data,
-                success: function (html) {
-                    $('.form-wrap').empty().html(html)
-                },
+                success: renderForm,
                 error: function (error) {
                     console.error(error)
                 }
@@ -23,20 +52,39 @@
         }
 
         function addCommand(e) {
-            var field = $(e.target).data('field')
+            var field = $(e.target).data("field");
 
-            updateForm('/run/command/add?field=' + field)
+            updateForm("/run/form/add/" + field)
         }
 
         function removeCommand(e) {
-            var field = $(e.target).data('field')
+            var field = $(e.target).data("field");
 
-            updateForm('/run/command/remove?field=' + field)
+            updateForm("/run/form/remove/" + field)
+        }
+
+        function renderForm(html) {
+            $(".form-wrap").empty().html(html)
+        }
+
+        function formSubmit(e) {
+            var data = $("form").serialize();
+            $.post({
+                url: '/run/form/submit',
+                data: data,
+                success: renderForm,
+                error: function (error) {
+                    console.error(error)
+                }
+            });
+            e.preventDefault()
         }
 
         $(function () {
-            $("body").on('click', 'button[data-command=add]', addCommand)
-            $("body").on('click', 'button[data-command=remove]', removeCommand)
+            $("body").on("click", "button[data-command=add]", addCommand);
+            $("body").on("click", "button[data-command=remove]", removeCommand);
+            $("body").on("submit", "form", formSubmit);
+            initForm()
         })
     </script>
 {% endblock %}
@@ -44,6 +92,5 @@
 {% block content %}
     <h1>Run modeling</h1>
     <div class="form-wrap">
-        {{ render_form(form) }}
     </div>
 {% endblock %}

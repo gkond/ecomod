@@ -296,22 +296,33 @@ def set_form_defaults(form, commands):
 
 @app.route('/run', methods=['GET', 'POST'])
 def view_run():
+    return render_template('run.html')
+
+
+@app.route('/run/form/init', methods=['POST'])
+def view_run_init():
+    run_form = get_run_form()
+    commands = json.loads(request.data)['commands']
+    set_form_defaults(run_form, commands)
+
+    return jsonify(render_template('run_form.html', form=run_form))
+
+
+@app.route('/run/form/submit', methods=['POST'])
+def view_run_submit():
     run_form = get_run_form()
 
     if run_form.validate_on_submit():
         commands = get_commands(run_form)
         # TODO: run modeling with commands
-        return render_template('run_success.html', commands=json.dumps(commands, sort_keys=True, indent=4))
+        commands_string = json.dumps(commands, sort_keys=True, indent=4)
+        return render_template('run_success.html', commands=commands_string)
 
-    commands = load_json('run.json')
-    set_form_defaults(run_form, commands)
-
-    return render_template('run.html', form=run_form)
+    return render_template('run_form.html', form=run_form)
 
 
-@app.route('/run/command/add', methods=['POST'])
-def view_run_add():
-    field = request.args['field']
+@app.route('/run/form/add/<field>', methods=['POST'])
+def view_run_add(field):
     run_form = get_run_form()
     run_form[field].append_entry()
     commands = get_commands(run_form)
@@ -320,9 +331,8 @@ def view_run_add():
     return render_template('run_form.html', form=run_form)
 
 
-@app.route('/run/command/remove', methods=['POST'])
-def view_run_remove():
-    field = request.args['field']
+@app.route('/run/form/remove/<field>', methods=['POST'])
+def view_run_remove(field):
     run_form = get_run_form()
     run_form[field].pop_entry()
     commands = get_commands(run_form)
