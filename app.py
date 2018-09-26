@@ -305,7 +305,7 @@ def view_run_init():
     commands = json.loads(request.data)['commands']
     set_form_defaults(run_form, commands)
 
-    return jsonify(render_template('run_form.html', form=run_form))
+    return render_template('run_form.html', form=run_form)
 
 
 @app.route('/run/form/submit', methods=['POST'])
