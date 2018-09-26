@@ -294,7 +294,7 @@ def set_form_defaults(form, commands):
         sub_form.delta.data = command.get('delta', '')
 
 
-@app.route('/run', methods=['GET', 'POST'])
+@app.route('/run')
 def view_run():
     return render_template('run.html')
 
