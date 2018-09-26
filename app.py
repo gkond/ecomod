@@ -318,6 +318,9 @@ def view_run_submit():
         commands_string = json.dumps(commands, sort_keys=True, indent=4)
         return render_template('run_success.html', commands=commands_string)
 
+    commands = get_commands(run_form)
+    set_form_defaults(run_form, commands)
+
     return render_template('run_form.html', form=run_form)
 
 
