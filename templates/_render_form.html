@@ -2,9 +2,9 @@
 
 {% macro render_form(form) %}
     <form method="post" action="/run" class="mt-5">
+        {{ render_field(form.exe_models) }}
         {{ render_field(form.start_day) }}
         {{ render_field(form.number_of_days) }}
-        {{ render_field(form.exe_models) }}
 
         {{ render_field_list(form.change_input_series_one_model, 'Change one model') }}
         {{ render_field_list(form.change_input_series_all_models, 'Change all models') }}
@@ -22,25 +22,29 @@
 
 {% macro render_field(field) %}
     <div class="form-group row">
-        <label for="{{ field.name }}" class="col-sm-2 col-form-label">{{ field.label.text }}</label>
-        <div class="col-4">
-            {{ field(class_='form-control', **kwargs)|safe }}
-            {% for error in field.errors %}
-                <div class="alert alert-danger mt-2">{{ error }}</div>
-            {% endfor %}
+        <div class="col-11">
+            <div class="row">
+                <label for="{{ field.name }}" class="col-4 col-form-label">{{ field.label.text }}</label>
+                <div class="col-8">
+                    {{ field(class_='form-control', **kwargs)|safe }}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger mt-2">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
     </div>
 {% endmacro %}
 
 {% macro render_field_list(form, name) %}
     <div class="form-group row mt-5">
-        <div class="col-6">
+        <div class="col">
             <h4>{{ name }}</h4>
         </div>
     </div>
     {% for sub_form in form %}
         <div class="form-group row">
-            <div class="col-6">
+            <div class="col-11">
                 {% for field in sub_form %}
                     <div class="form-group row">
                         <div class="col-4">
@@ -52,18 +56,18 @@
                     </div>
                 {% endfor %}
             </div>
-            <div class="col-auto">
+            <div class="col-1">
                 {% if loop.last %}
-                <button type="button" class="btn btn-light btn-sm form-control"
-                        data-command="remove" data-field="{{ form.name }}" data-index="{{ loop.index }}">
-                    ×
-                </button>
+                    <button type="button" class="btn btn-light btn-sm form-control"
+                            data-command="remove" data-field="{{ form.name }}" data-index="{{ loop.index }}">
+                        ×
+                    </button>
                 {% endif %}
             </div>
         </div>
     {% endfor %}
     <div class="form-group row">
-        <div class="col-6">
+        <div class="col-11">
             <div class="float-right">
                 <button type="button" class="btn btn-light btn-sm form-control"
                         data-command="add" data-field="{{ form.name }}">

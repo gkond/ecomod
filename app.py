@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
 from wtforms import IntegerField, FloatField, DateField, SelectField, \
@@ -13,6 +13,7 @@ pp = pprint.PrettyPrinter(indent=4)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
+app.jinja_env.filters['json_pretty'] = lambda value: json.dumps(value, sort_keys=True, indent=4)
 Bootstrap(app)
 
 
@@ -305,23 +306,29 @@ def view_run_init():
     commands = json.loads(request.data)['commands']
     set_form_defaults(run_form, commands)
 
-    return render_template('run_form.html', form=run_form)
+    return json.dumps({
+        'commands': commands,
+        'html': render_template('run_form.html', form=run_form)
+    })
 
 
 @app.route('/run/form/submit', methods=['POST'])
 def view_run_submit():
     run_form = get_run_form()
-
-    if run_form.validate_on_submit():
-        commands = get_commands(run_form)
-        # TODO: run modeling with commands
-        commands_string = json.dumps(commands, sort_keys=True, indent=4)
-        return render_template('run_success.html', commands=commands_string)
-
     commands = get_commands(run_form)
-    set_form_defaults(run_form, commands)
 
-    return render_template('run_form.html', form=run_form)
+    # submitted and valid
+    if run_form.validate_on_submit():
+        # TODO: run modeling with commands
+        return json.dumps({
+            'commands': commands,
+            'html': render_template('run_success.html', commands=commands)
+        })
+
+    return json.dumps({
+        'commands': commands,
+        'html': render_template('run_form.html', form=run_form)
+    }), 400
 
 
 @app.route('/run/form/add/<field>', methods=['POST'])
@@ -331,7 +338,10 @@ def view_run_add(field):
     commands = get_commands(run_form)
     set_form_defaults(run_form, commands)
 
-    return render_template('run_form.html', form=run_form)
+    return json.dumps({
+        'commands': commands,
+        'html': render_template('run_form.html', form=run_form)
+    })
 
 
 @app.route('/run/form/remove/<field>', methods=['POST'])
@@ -341,7 +351,23 @@ def view_run_remove(field):
     commands = get_commands(run_form)
     set_form_defaults(run_form, commands)
 
-    return render_template('run_form.html', form=run_form)
+    return json.dumps({
+        'commands': commands,
+        'html': render_template('run_form.html', form=run_form)
+    })
+
+
+@app.route('/run/form/history', methods=['POST'])
+def view_run_history():
+    history = json.loads(request.data)
+    history = [
+        {
+            'id': item['id'],
+            'date': datetime.fromtimestamp(item['date'] / 1000),
+            'commands': item['commands']
+        } for item in history
+    ]
+    return render_template('run_history.html', history=history)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,46 @@
+<style>
+    .history-row {
+        cursor: pointer
+    }
+</style>
+
+{% macro get_command_value(commands, command, field) %}
+    {% for group in commands|groupby('command') %}
+        {% if group.grouper == command %}
+            {% for groupItem in group.list %}
+                {% if groupItem[field] is iterable and groupItem[field] is not string %}
+                    <span>{{ groupItem[field] | list | join (', ') }}</span>
+                {% else %}
+                    <span>{{ groupItem[field] }}</span>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    {% endfor %}
+{% endmacro %}
+
+{% if history|length %}
+    <table class="table table-sm table-hover mt-5">
+        <thead>
+        <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Models</th>
+            <th scope="col">Start day</th>
+            <th scope="col">Days</th>
+            <th scope="col">Commands</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for item in history %}
+            <tr class="history-row" data-command="load-history" data-id="{{ item.id }}">
+                <td>{{ item.date }}</td>
+                <td>{{ get_command_value(item.commands, 'exe_models', 'include') }}</td>
+                <td>{{ get_command_value(item.commands, 'start_day', 'start_day') }}</td>
+                <td>{{ get_command_value(item.commands, 'number_of_days', 'number_of_days') }}</td>
+                <td>{{ item.commands|length }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>Nothing here yet. Run modeling to see history.</p>
+{% endif %}

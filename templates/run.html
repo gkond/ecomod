@@ -8,67 +8,127 @@
 {% block head %}
     {{ super() }}
     <script>
-        var defaultCommands = [
-            {
-                "command": "start_day",
-                "start_day": "2018-01-02"
-            },
-            {
-                "command": "number_of_days",
-                "number_of_days": 3
-            },
-            {
-                "command": "exe_models",
-                "include": [
-                    "model_0",
-                    "model_1"
-                ]
-            }
-        ];
-
-        function initForm() {
-            var data = {commands: defaultCommands};
+        function resetRunForm(commands) {
+            var data = {commands: commands};
             $.ajax({
                 type: "POST",
                 contentType: "application/json",
                 url: "/run/form/init",
                 data: JSON.stringify(data),
-                success: function (html) {
-                    $(".form-wrap").empty().html(html)
+                success: function (response) {
+                    var responseParsed = JSON.parse(response);
+                    $(".form-wrap").empty().html(responseParsed.html)
                 },
-                error: function (error) {
-                    console.error(error)
-                }
+                error: handleError
             })
         }
 
-        function updateForm(url) {
+        function updateRunForm(url, onSuccess) {
             var data = $("form").serialize();
             $.post({
                 url: url,
                 data: data,
-                success: function (html) {
-                    $(".form-wrap").empty().html(html)
+                success: function (response) {
+                    var responseParsed = JSON.parse(response);
+                    $(".form-wrap").empty().html(responseParsed.html);
+                    if (onSuccess) {
+                        onSuccess(responseParsed)
+                    }
                 },
-                error: function (error) {
-                    console.error(error)
-                }
+                error: handleError
             })
         }
 
-        $(function () {
-            initForm();
+        var HISTORY_KEY = "run_history";
 
+        function getHistory() {
+            var store;
+            try {
+                store = JSON.parse(localStorage.getItem(HISTORY_KEY));
+                if (!Array.isArray(store)) {
+                    throw new TypeError("Incorrect store type: " + typeof store)
+                }
+            } catch (e) {
+                store = []
+            }
+            return store;
+        }
+
+        function setHistory(store) {
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(store));
+        }
+
+        function getFromHistory(id) {
+            var history = getHistory();
+            var item = history.find(function (item) {
+                return item.id == id
+            })
+            return item.commands;
+        }
+
+        function pushToHistory(commands) {
+            var history = getHistory();
+            ids = history.map(function (item) {
+                return item.id
+            });
+            history.push({
+                id: (Math.max(ids) + 1) || 0,
+                date: new Date().getTime(),
+                commands: commands
+            });
+            setHistory(history);
+            updateHistoryForm(history)
+        }
+
+        function updateHistoryForm(history) {
+            $.ajax({
+                type: "POST",
+                contentType: "application/json",
+                url: "/run/form/history",
+                data: JSON.stringify(history),
+                success: function (html) {
+                    $(".run-history").empty().html(html)
+                },
+                error: handleError
+            });
+        }
+
+        function handleError(error) {
+            console.error(error)
+        }
+
+        $(function () {
+            resetRunForm([]);
+
+            var history = getHistory();
+            updateHistoryForm(history);
+
+            $("body").on("click", "button[data-command=reset]", function () {
+                resetRunForm([]);
+            });
             $("body").on("click", "button[data-command=add]", function (e) {
                 var field = $(e.target).data("field");
-                updateForm("/run/form/add/" + field)
+                updateRunForm("/run/form/add/" + field)
             });
             $("body").on("click", "button[data-command=remove]", function (e) {
                 var field = $(e.target).data("field");
-                updateForm("/run/form/remove/" + field)
+                updateRunForm("/run/form/remove/" + field)
+            });
+            $("body").on("click", "[data-command=load-history]", function (e) {
+                var id = $(e.target).closest("tr").data("id");
+                var commands = getFromHistory(id);
+                resetRunForm(commands);
+            });
+            $("body").on("click", "button[data-command=clear-history]", function () {
+                var history = [];
+                setHistory(history);
+                updateHistoryForm(history)
             });
             $("body").on("submit", "form", function (e) {
-                updateForm("/run/form/submit");
+                var onSuccess = function (response) {
+                    pushToHistory(response.commands)
+                };
+                updateRunForm("/run/form/submit", onSuccess);
                 e.preventDefault()
             });
         })
@@ -76,7 +136,37 @@
 {% endblock %}
 
 {% block content %}
-    <h1>Run modeling</h1>
-    <div class="form-wrap">
+    <div class="row">
+        <div class="col">
+            <div class="row">
+                <div class="col-9">
+                    <h1>Run modeling</h1>
+                </div>
+                <div class="col-2">
+                    <button type="button" class="btn btn-light btn-sm form-control" data-command="reset">
+                        reset
+                    </button>
+                </div>
+                <div class="col-1">
+                </div>
+            </div>
+            <div class="form-wrap"></div>
+        </div>
+        <div class="col-1">
+        </div>
+        <div class="col">
+            <div class="row">
+                <div class="col-10">
+                    <h1>History of runs</h1>
+                </div>
+                <div class="col-2">
+                    <button type="button" class="btn btn-light btn-sm form-control" data-command="clear-history">
+                        clear
+                    </button>
+                </div>
+            </div>
+            <div class="run-history"></div>
+        </div>
     </div>
+
 {% endblock %}
