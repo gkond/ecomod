@@ -1,11 +1,14 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for, session
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
+from flask_login import LoginManager, current_user, login_user, logout_user, UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 from wtforms import IntegerField, FloatField, DateField, SelectField, \
-    SelectMultipleField, FieldList, FormField, validators
+    SelectMultipleField, FieldList, FormField, StringField, PasswordField, validators
 from datetime import datetime
 import os.path
 import json
+import redis
 import re
 import pprint
 
@@ -15,6 +18,73 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
 app.jinja_env.filters['json_pretty'] = lambda value: json.dumps(value, sort_keys=True, indent=4)
 Bootstrap(app)
+
+db = redis.Redis('localhost')
+
+
+class User(UserMixin):
+    user_id = ''
+    email = ''
+    password_hash = ''
+
+    def get_id(self):
+        return self.user_id
+
+
+def db_init():
+    db.flushdb()
+    auth_init()
+    auth_add_user('gleb.kondratenko@skybonds.com', 'pwd')
+
+
+def auth_init():
+    db.set('user:ids', '0')
+
+
+def auth_add_user(email, password):
+    user_id = db.incr('user:ids')
+    db.hset('user:emails', email, user_id)
+    db.hmset('user:%s' % user_id, {
+        'user_id': user_id,
+        'email': email,
+        'password_hash': password
+    })
+    return auth_get_user_by_id(user_id)
+
+
+def auth_get_user_by_email(email):
+    user_id = db.hget('user:emails', email)
+    if not user_id:
+        return None
+    return auth_get_user_by_id(user_id)
+
+
+def auth_get_user_by_id(user_id):
+    key = 'user:%s' % user_id
+    if db.hlen(key) == 0:
+        return None
+    user_data = db.hgetall(key)
+    user = User()
+    user.user_id = user_data['user_id']
+    user.email = user_data['email']
+    user.password_hash = generate_password_hash(user_data['password_hash'])
+    return user
+
+
+def auth_check_password(user, password):
+    print('auth_check_password', user.password_hash, password)
+    return check_password_hash(user.password_hash, password)
+
+
+db_init()
+
+login_manager = LoginManager(app)
+login_manager.login_view = 'view_login'
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return auth_get_user_by_id(user_id)
 
 
 def load_json(name):
@@ -370,6 +440,82 @@ def view_run_history():
         } for item in history
     ]
     return render_template('run_history.html', history=history)
+
+
+class RegisterForm(FlaskForm):
+    email = StringField('Email', [validators.required()])
+    password = PasswordField('Password', [validators.required()])
+
+    def __init__(self, *args, **kwargs):
+        FlaskForm.__init__(self, *args, **kwargs)
+        self.user = None
+
+    def validate(self):
+        rv = FlaskForm.validate(self)
+        if not rv:
+            return False
+
+        user = auth_get_user_by_email(self.email.data)
+        if user:
+            self.password.errors.append('Email already registered')
+            return False
+
+        if len(self.password.data) < 8:
+            self.password.errors.append('Password should be at least 8 characters long')
+            return False
+
+        self.user = auth_add_user(self.email.data, self.password.data)
+        return True
+
+
+class LoginForm(FlaskForm):
+    email = StringField('Email', [validators.required()])
+    password = PasswordField('Password', [validators.required()])
+
+    def __init__(self, *args, **kwargs):
+        FlaskForm.__init__(self, *args, **kwargs)
+        self.user = None
+
+    def validate(self):
+        rv = FlaskForm.validate(self)
+        if not rv:
+            return False
+
+        user = auth_get_user_by_email(self.email.data)
+        if not user or not auth_check_password(user, self.password.data):
+            self.password.errors.append('Invalid email or password')
+            return False
+
+        self.user = user
+        return True
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def view_register():
+    if current_user.is_authenticated:
+        return redirect(url_for('view_home'))
+    register_form = RegisterForm()
+    if register_form.validate_on_submit():
+        login_user(register_form.user, remember=True)
+        return redirect(url_for('view_home'))
+    return render_template('register.html', form=register_form)
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def view_login():
+    if current_user.is_authenticated:
+        return redirect(url_for('view_home'))
+    login_form = LoginForm()
+    if login_form.validate_on_submit():
+        login_user(login_form.user, remember=True)
+        return redirect(url_for('view_home'))
+    return render_template('login.html', form=login_form)
+
+
+@app.route('/logout')
+def view_logout():
+    logout_user()
+    return redirect(url_for('view_home'))
 
 
 if __name__ == '__main__':
