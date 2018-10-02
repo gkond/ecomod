@@ -62,17 +62,19 @@
             var history = getHistory();
             var item = history.find(function (item) {
                 return item.id == id
-            })
+            });
             return item.commands;
         }
 
         function pushToHistory(commands) {
             var history = getHistory();
-            ids = history.map(function (item) {
+            max = history.map(function (item) {
                 return item.id
-            });
+            }).reduce(function (result, value) {
+                return (result > value ? result : value);
+            }, 0);
             history.push({
-                id: (Math.max(ids) + 1) || 0,
+                id: max + 1,
                 date: new Date().getTime(),
                 commands: commands
             });

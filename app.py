@@ -45,9 +45,11 @@ def view_results():
                 'y': []
             }
         }
-        for key, value in values.items():
-            ts['values']['x'].append(key)
-            ts['values']['y'].append(value)
+        dates = [key for key in values]
+        dates.sort()
+        for date in dates:
+            ts['values']['x'].append(date)
+            ts['values']['y'].append(values[date])
 
         # Input time series. Examples:
         # G & A_Exxon_sovcombank: macbook:timeseries
