@@ -1,8 +1,10 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
-from flask_login import LoginManager, current_user, login_user, logout_user, UserMixin
+from flask_wtf.file import FileField, FileRequired, FileAllowed
+from flask_login import LoginManager, current_user, login_required, login_user, logout_user, UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from wtforms import IntegerField, FloatField, DateField, SelectField, \
     SelectMultipleField, FieldList, FormField, StringField, PasswordField, validators
 from datetime import datetime
@@ -11,11 +13,13 @@ import json
 import redis
 import re
 import pprint
+import uuid
 
 pp = pprint.PrettyPrinter(indent=4)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
+app.config['UPLOAD_FOLDER'] = '/static/upload'
 app.jinja_env.filters['json_pretty'] = lambda value: json.dumps(value, sort_keys=True, indent=4)
 Bootstrap(app)
 
@@ -72,7 +76,6 @@ def auth_get_user_by_id(user_id):
 
 
 def auth_check_password(user, password):
-    print('auth_check_password', user.password_hash, password)
     return check_password_hash(user.password_hash, password)
 
 
@@ -101,6 +104,22 @@ def view_home():
 def view_models():
     models = load_json('models.json')
     return render_template('models.html', models=models)
+
+
+@app.route('/models/add', methods=['GET', 'POST'])
+@login_required
+def view_models_add():
+    model_add_form = ModelAddForm()
+    if model_add_form.validate_on_submit():
+        def get_path(form_file):
+            safe_filename = secure_filename(form_file.filename)
+            unique_filename = '%s_%s' % (str(uuid.uuid4()), safe_filename)
+            return os.path.join(app.static_folder, 'upload', unique_filename)
+        form_file = model_add_form.original_file_name.data
+        path = get_path(form_file)
+        form_file.save(path)
+        return redirect(url_for('view_models'))
+    return render_template('models_add.html', form=model_add_form)
 
 
 @app.route('/results')
@@ -223,6 +242,14 @@ class RunForm(FlaskForm):
     change_input_series_all_models = FieldList(FormField(ChangeAllModelsForm), min_entries=0)
     change_timeseries_value_several_days = FieldList(FormField(ChangeInputNewValue), min_entries=0)
     change_timeseries_value_several_days_add_delta = FieldList(FormField(ChangeInputAddDelta), min_entries=0)
+
+
+class ModelAddForm(FlaskForm):
+    model_user_name = StringField('Model name', [validators.required()])
+    original_file_name = FileField("Model input", validators=[
+        FileRequired(),
+        FileAllowed(['xlsx'], 'Only .xlsx files are allowed as model input')
+    ])
 
 
 def get_models_choices():
@@ -508,11 +535,13 @@ def view_login():
     login_form = LoginForm()
     if login_form.validate_on_submit():
         login_user(login_form.user, remember=True)
-        return redirect(url_for('view_home'))
+        next_url = request.args.get('next')
+        return redirect(next_url or url_for('view_home'))
     return render_template('login.html', form=login_form)
 
 
 @app.route('/logout')
+@login_required
 def view_logout():
     logout_user()
     return redirect(url_for('view_home'))

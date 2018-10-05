@@ -3,7 +3,10 @@
 {% block title %}All Models{% endblock %}
 
 {% block content %}
-    <h1>Models</h1>
+    <h1>
+        Models
+        <a class="btn btn-primary ml-5" href="/models/add" role="button">Add model</a>
+    </h1>
     {% if models %}
         {% for model in models %}
             <div class="card shadow my-5">
