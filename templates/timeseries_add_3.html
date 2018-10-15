@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Add Timeseries{% endblock %}
+{% block head %}
+{{ super() }}
+<script src="/static/timeseries_add.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1>Add Timeseries, step 3 of 3</h1>
+<form method="post" enctype="multipart/form-data">
+    <div class="row">
+        <div class="col-6">
+            <div class="row">
+                <div class="col-4">{{ form.ts_name.label.text }}</div>
+                <div class="col-8">{{ form.ts_name.data }}</div>
+            </div>
+            <div class="row">
+                <div class="col-4">{{ form.ts_type.label.text }}</div>
+                <div class="col-8">{{ form.ts_type.data }}</div>
+            </div>
+            {% if form.ts_entity.data == 'new' %}
+            <div class="row">
+                <div class="col-4">{{ form.ts_entity_new.label.text }}</div>
+                <div class="col-8">{{ form.ts_entity_new.data }}</div>
+            </div>
+            {% else %}
+            <div class="row">
+                <div class="col-4">{{ form.ts_entity.label.text }}</div>
+                <div class="col-8">{{ form.ts_entity.data }}</div>
+            </div>
+            {% endif %}
+            {% if form.ts_index.data == 'new' %}
+            <div class="row">
+                <div class="col-4">{{ form.ts_index_new.label.text }}</div>
+                <div class="col-8">{{ form.ts_index_new.data }}</div>
+            </div>
+            {% else %}
+            <div class="row">
+                <div class="col-4">{{ form.ts_index.label.text }}</div>
+                <div class="col-8">{{ form.ts_index.data }}</div>
+            </div>
+            {% endif %}
+            <div class="form-group row">
+                <label class="col-4 col-form-label" for="{{ form.ts_file.name }}">
+                    Model input
+                </label>
+                <div class="col-8 col-form-label">
+                    {{ form.ts_file(class_='form-control-file')|safe }}
+                    {% for error in form.ts_file.errors %}
+                    <div class="alert alert-danger mt-2">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-4"></div>
+                <div class="col-8">
+                    <button type="submit" class="btn btn-primary">Next</button>
+                </div>
+            </div>
+            {{ form.hidden_tag() }}
+        </div>
+    </div>
+</form>
+{% endblock %}

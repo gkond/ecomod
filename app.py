@@ -5,7 +5,7 @@ from flask_wtf.file import FileField, FileRequired, FileAllowed
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user, UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from wtforms import IntegerField, FloatField, DateField, SelectField, \
+from wtforms import IntegerField, FloatField, DateField, SelectField, RadioField, HiddenField, \
     SelectMultipleField, FieldList, FormField, StringField, PasswordField, validators
 from datetime import datetime
 from urlparse import urlparse, urljoin
@@ -39,11 +39,27 @@ class User(UserMixin):
 def db_init():
     db.flushdb()
     auth_init()
+    entities_init()
     auth_add_user('gleb.kondratenko@skybonds.com', 'pwd')
 
 
 def auth_init():
     db.set('user:ids', '0')
+
+
+def entities_init():
+    db.lpush('countries', 'USA', 'China', 'Russia')
+    db.lpush('entities:goods', 'Aluminium', 'Gold', 'Oil', 'Rubber')
+    db.lpush('entities:companies', 'Exxon', 'Goodyear', 'Rusal')
+    db.lpush('indexes', 'Price', 'Profit')
+
+
+def entities_add(ts_type, value):
+    db.lpush('entities:%s' % ts_type, value)
+
+
+def indexes_add(value):
+    db.lpush('indexes', value)
 
 
 def auth_add_user(email, password):
@@ -122,6 +138,118 @@ def view_models_add():
         form_file.save(path)
         return redirect(url_for('view_models'))
     return render_template('models_add.html', form=model_add_form)
+
+
+@app.route('/timeseries/add', methods=['GET', 'POST'])
+@login_required
+def view_timeseries_add():
+    class TimeseriesAddStep1Form(FlaskForm):
+        ts_step = HiddenField('Step', default='1')
+        ts_name = StringField('Timeseries name', [validators.required()])
+        ts_type = SelectField('Entity type', choices=[('companies', 'Company'), ('goods', 'Goods & Resources')])
+
+    class TimeseriesAddStep2Form(FlaskForm):
+        ts_step = HiddenField('Step')
+        ts_name = HiddenField('Timeseries name')
+        ts_type = HiddenField('Timeseries type')
+        ts_entity = SelectField('Entity', choices=[])
+        ts_entity_new = StringField('Entity new')
+        ts_index = SelectField('Index', choices=[])
+        ts_index_new = StringField('Index new')
+
+        def validate(self):
+            rv = FlaskForm.validate(self)
+            if not rv:
+                return False
+
+            if self.ts_entity.data == 'new' and not self.ts_entity_new.data:
+                self.ts_entity_new.errors.append('New entity name cannot be empty')
+                return False
+
+            if self.ts_index.data == 'new' and not self.ts_index_new.data:
+                self.ts_index_new.errors.append('New index name cannot be empty')
+                return False
+
+            return True
+
+    class TimeseriesAddStep3Form(FlaskForm):
+        ts_step = HiddenField('Step')
+        ts_name = HiddenField('Timeseries name')
+        ts_type = HiddenField('Timeseries type')
+        ts_entity = HiddenField('Entity')
+        ts_entity_new = HiddenField('Entity new')
+        ts_index = HiddenField('Index')
+        ts_index_new = HiddenField('Index new')
+        ts_file = FileField('Timeseries file', validators=[
+            FileRequired(),
+            FileAllowed(['xls', 'xlsx'], 'Only .xls and .xlsx files are allowed as model input')
+        ])
+
+    def get_ts_entity_choices(ts_type):
+        result = [(entity, entity) for entity in db.lrange('entities:%s' % ts_type, 0, -1)]
+        result.sort()
+        return result + [('new', 'New value...')]
+
+    def get_ts_index_choices():
+        result = [(entity, entity) for entity in db.lrange('indexes', 0, -1)]
+        result.sort()
+        return result + [('new', 'New value...')]
+
+    if request.method == 'POST':
+        print('request.form.step.data', request.form['ts_step'])
+
+        if request.form['ts_step'] == '1':
+            f_step_1 = TimeseriesAddStep1Form()
+            if f_step_1.validate_on_submit():
+                f_step_2 = TimeseriesAddStep2Form(
+                    ts_name=f_step_1.ts_name.data,
+                    ts_type=f_step_1.ts_type.data
+                )
+                f_step_2.ts_step.data = '2'
+                f_step_2.ts_entity.choices = get_ts_entity_choices(f_step_1.ts_type.data)
+                f_step_2.ts_index.choices = get_ts_index_choices()
+                return render_template('timeseries_add_2.html', form=f_step_2)
+            return render_template('timeseries_add_1.html', form=f_step_1)
+
+        if request.form['ts_step'] == '2':
+            f_step_2 = TimeseriesAddStep2Form()
+            f_step_2.ts_entity.choices = get_ts_entity_choices(f_step_2.ts_type.data)
+            f_step_2.ts_index.choices = get_ts_index_choices()
+            if f_step_2.validate_on_submit():
+                f_step_3 = TimeseriesAddStep3Form(
+                    ts_name=f_step_2.ts_name.data,
+                    ts_type=f_step_2.ts_type.data,
+                    ts_entity=f_step_2.ts_entity.data,
+                    ts_entity_new=f_step_2.ts_entity_new.data,
+                    ts_index=f_step_2.ts_index.data,
+                    ts_index_new=f_step_2.ts_index_new.data
+                )
+                f_step_3.ts_step.data = '3'
+                return render_template('timeseries_add_3.html', form=f_step_3)
+            return render_template('timeseries_add_2.html', form=f_step_2)
+
+        if request.form['ts_step'] == '3':
+            f_step_3 = TimeseriesAddStep3Form()
+            if f_step_3.validate_on_submit():
+                def get_path(form_file):
+                    safe_filename = secure_filename(form_file.filename)
+                    unique_filename = '%s_%s' % (str(uuid.uuid4()), safe_filename)
+                    return os.path.join(app.static_folder, 'upload', unique_filename)
+
+                form_file = f_step_3.ts_file.data
+                path = get_path(form_file)
+
+                if f_step_3.ts_entity.data == 'new':
+                    entities_add(f_step_3.ts_type.data, f_step_3.ts_entity_new.data)
+                if f_step_3.ts_index.data == 'new':
+                    indexes_add(f_step_3.ts_index_new.data)
+
+                form_file.save(path)
+                return redirect(url_for('view_models'))
+            return render_template('timeseries_add_3.html', form=f_step_3)
+
+    f_step_1 = TimeseriesAddStep1Form()
+    return render_template('timeseries_add_1.html', form=f_step_1)
 
 
 @app.route('/results')

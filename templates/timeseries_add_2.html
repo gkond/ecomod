@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Add Timeseries{% endblock %}
+{% block head %}
+{{ super() }}
+<script src="/static/timeseries_add.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1>Add Timeseries, step 2 of 3</h1>
+<form method="post" enctype="multipart/form-data">
+    <div class="row">
+        <div class="col-6">
+            <div class="form-group row">
+                <label class="col-4 col-form-label" for="{{ form.ts_entity.name }}">
+                    {{ form.ts_entity.label }}
+                </label>
+                <div class="col-8">
+                    {{ form.ts_entity(class_='form-control')|safe }}
+                    {% for error in form.ts_entity.errors %}
+                    <div class="alert alert-danger mt-2">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="form-group row" id="{{form.ts_entity_new.id}}_row">
+                <div class="col-4"></div>
+                <div class="col-8">
+                    {{ form.ts_entity_new(class_='form-control')|safe }}
+                    {% for error in form.ts_entity_new.errors %}
+                    <div class="alert alert-danger mt-2">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-4 col-form-label" for="{{ form.ts_index.name }}">
+                    {{ form.ts_index.label }}
+                </label>
+                <div class="col-8">
+                    {{ form.ts_index(class_='form-control')|safe }}
+                    {% for error in form.ts_index.errors %}
+                    <div class="alert alert-danger mt-2">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="form-group row" id="{{form.ts_index_new.id}}_row">
+                <div class="col-4"></div>
+                <div class="col-8">
+                    {{ form.ts_index_new(class_='form-control')|safe }}
+                    {% for error in form.ts_index_new.errors %}
+                    <div class="alert alert-danger mt-2">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-4"></div>
+                <div class="col-8">
+                    <button type="submit" class="btn btn-primary">Next</button>
+                </div>
+            </div>
+            {{ form.hidden_tag() }}
+        </div>
+    </div>
+</form>
+{% endblock %}
